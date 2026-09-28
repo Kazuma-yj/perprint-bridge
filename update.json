@@ -1,0 +1,19 @@
+{
+  "addons": {
+    "preprint-bridge@research.local": {
+      "updates": [
+        {
+          "version": "0.1.3",
+          "update_link": "https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/dist/preprint-bridge-0.1.3.xpi",
+          "update_hash": "sha256:c1601eb3d040f837ab7beddf0b9f57fbba772a7758c2cc7dee3811be8ea67ccf",
+          "applications": {
+            "zotero": {
+              "strict_min_version": "10.0",
+              "strict_max_version": "10.0.*"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
