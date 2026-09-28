@@ -1,6 +1,7 @@
 /* global window, document */
 (() => {
   "use strict";
+  function initialize() {
   const controller = window.arguments?.[0];
   if (!controller?.session) {
     document.getElementById("heading").textContent = "Open this window from Zotero / 请从 Zotero 打开此窗口";
@@ -84,7 +85,7 @@
     if (row.status === "undone") box.append(el("p", t("已恢复到本次更新前的条目信息。", "The item’s metadata has been restored to its state before this update."), "notice success"));
     const result = row.result, candidate = result?.candidates[row.candidateIndex];
     if (candidate) {
-      if (result.manualOverride) box.append(el("p", t("下方以当前条目为基准，使用上次找到的出版记录。请确认仍为同一篇论文；勾选更新将覆盖列出的当前值。", "The differences below use the current item and the previously found publication. Confirm this is still the same paper; selecting it for update overwrites the listed values."), "notice caution"));
+      if (result.manualOverride && row.status !== "updated") box.append(el("p", t("下方以当前条目为基准，使用上次找到的出版记录。请确认仍为同一篇论文；勾选更新将覆盖列出的当前值。", "The differences below use the current item and the previously found publication. Confirm this is still the same paper; selecting it for update overwrites the listed values."), "notice caution"));
       if (result.candidates.length > 1) {
         const select = el("select", undefined, "candidate");
         select.setAttribute("aria-label", t("选择出版记录", "Choose publication record"));
@@ -98,6 +99,7 @@
       box.append(el("p", t("来源：", "Source: ") + candidate.source + " · " + (candidate.date || candidate.year), "metadata"));
       box.append(el("p", candidate.venue, "metadata"));
       box.append(el("p", accepted ? t("依据：arXiv 作者的录用说明。尚未找到正式出版记录；保留 arXiv 链接，不填正式 DOI。", "Evidence: the author’s arXiv acceptance note. No publication record found; the arXiv URL stays and no publisher DOI is added.") :
+        result.manualOverride ? t("上次检索的匹配依据：当时的规范化题名与第一作者一致。", "Previous lookup basis: the normalized title and first author at that time matched.") :
         t("匹配依据：规范化题名与第一作者一致。", "Match basis: normalized title and first author agree."), accepted ? "notice caution" : "notice"));
       if (candidate.url) box.append(el("p", candidate.url, "metadata"));
       if (candidate.ccf) box.append(el("p", `CCF (2026): ${candidate.ccf.grade}` + (candidate.ccf.acronym ? ` (${candidate.ccf.acronym})` : ""), "metadata"));
@@ -167,4 +169,9 @@
   const unsubscribe = session.subscribe(render);
   window.addEventListener("unload", () => { unsubscribe(); controller.onClose?.(); session.close(); }, { once: true });
   run(() => session.scan());
+  }
+  // Gecko chrome documents and browser XML documents can handle defer
+  // differently. Always wait until the XHTML body exists before binding UI.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  else initialize();
 })();

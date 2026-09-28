@@ -2,7 +2,7 @@
 
 Date: 2026-09-28. Version: **1.2.0**.
 
-**67 automated tests passed.** Eleven workflow cases cover ten distinct papers: nine publication matches, one acceptance-only record, and one inconclusive search. This release replays cached responses captured earlier on the same date, including three DOI records and eight arXiv cases. BERT appears in both the preprint and published-DOI workflows. Each match checks the metadata written to a mock Zotero item. The final replay uses cached responses; network/cache counts are recorded in the JSON report.
+**68 automated tests passed.** Eleven workflow cases cover ten distinct papers: nine publication matches, one acceptance-only record, and one inconclusive search. This release replays cached responses captured earlier on the same date, including three DOI records and eight arXiv cases. BERT appears in both the preprint and published-DOI workflows. Each match checks the metadata written to a mock Zotero item. The final replay uses cached responses; network/cache counts are recorded in the JSON report.
 
 Package verification compares every XPI entry to source, checks bootstrap callbacks, and verifies the manifest version, update URL and SHA-256. Release tests cover immutable published assets, draft publication order, failed uploads and conflicting tags.
 
@@ -16,7 +16,7 @@ Menu tests cover a preprint, an accepted conference item, a PMLR record, another
 
 ## 1.2.0 新增测试
 
-新增 10 项模型与 Zotero 适配器回归测试：
+新增 11 项模型与 Zotero 适配器回归测试：
 
 - 修改预览与实际写入一致，包括条目类型转换导致的字段移除；不保存预览副本。
 - 批量只更新勾选项；保存失败恢复内存数据并继续后续条目。
@@ -42,7 +42,7 @@ Menu tests cover a preprint, an accepted conference item, a PMLR record, another
 | [Random Forests](https://doi.org/10.1023/A:1010933404324)，已有期刊条目 | DOI 直接核对为 Machine Learning 2001，45 卷，5–32 页；无需 arXiv 标识 | B，按完整刊名匹配 |
 | [Deep learning](https://doi.org/10.1038/nature14539)，已有期刊条目 | DOI 直接核对为 Nature 2015，521 卷，436–444 页 | 无匹配，不填评级 |
 | [BERT](https://doi.org/10.18653/v1/N19-1423)，已有会议条目 | DOI 直接核对正式论文集与页码，保留已有 NAACL 会议名称用于 CCF 匹配 | B |
-| [Stealing Part of a Production Language Model](https://arxiv.org/abs/2403.06634) | ICML 2024，PMLR 235，5680–6705 页；arXiv 无会议说明也能找到 | A |
+| [Stealing Part of a Production Language Model](https://arxiv.org/abs/2403.06634) | ICML 2024，PMLR 235，5680–5705 页；arXiv 无会议说明也能找到 | A |
 | [The Platonic Representation Hypothesis](https://arxiv.org/abs/2405.07987) | ICML 2024；识别正式版的 `Position:` 前缀 | A |
 | [Auditing Prompt Caching in Language Model APIs](https://arxiv.org/abs/2502.07776) | ICML 2025，PMLR 267，20477–20496 页 | A |
 | [LoRA](https://arxiv.org/abs/2106.09685) | ICLR 2022，DBLP 官方 SPARQL 返回正式记录 | A |
@@ -66,7 +66,7 @@ node scripts/live-smoke.cjs 2403.06634 10.1038/nature14539
 
 ## 自动回归测试
 
-`npm test`：67 项通过，包括：
+`npm test`：68 项通过，包括：
 
 - 无 arXiv 会议说明时，从官方 ICML 目录查找；排除 GRaM 等工作坊。
 - DBLP 返回 HTTP 200 HTML 时继续检索；429 不触发同源自动重试。

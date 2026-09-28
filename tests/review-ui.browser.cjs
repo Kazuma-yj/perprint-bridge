@@ -18,8 +18,9 @@ const { chromium } = require('playwright');
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ headless: true });
   const errors = [], checks = [];
+  let page;
   try {
-    const page = await browser.newPage({ viewport: { width: 1060, height: 780 } });
+    page = await browser.newPage({ viewport: { width: 1060, height: 780 } });
     page.on('pageerror', error => errors.push(error.message));
     const fixture = () => {
       const zh = !new URL(location.href).searchParams.has('en');
@@ -127,5 +128,12 @@ const { chromium } = require('playwright');
     checks.push('Chinese and English text, narrow viewport, dark appearance');
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ passed: checks.length, checks, pageErrors: errors, browser: await browser.version() }, null, 2));
+  } catch (error) {
+    console.error('UI diagnostics:', JSON.stringify({ errors, text: await page?.locator('body').innerText().catch(() => '') }));
+    if (page && process.env.UI_SCREENSHOT_DIR) {
+      fs.mkdirSync(process.env.UI_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({ path: path.join(process.env.UI_SCREENSHOT_DIR, 'failure.png') }).catch(() => {});
+    }
+    throw error;
   } finally { await browser.close(); server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

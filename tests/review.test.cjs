@@ -148,6 +148,22 @@ test('accepted-only rows require individual selection and candidates with no dif
   assert.deepEqual(writes, [1, 2]);
 });
 
+test('stop during a save lets that transaction finish, keeps undo, and does not save the next paper', async () => {
+  const { model } = harness(); let finish;
+  const writes = [], undos = [];
+  const queue = model.create({
+    async check() { return { candidates: [{}], previews: [[{ field: 'date', after: '2024' }]] }; },
+    async apply(id) { writes.push(id); await new Promise(resolve => { finish = resolve; }); return { id }; },
+    async undo(id) { undos.push(id); }
+  });
+  queue.add([{ id: 1 }, { id: 2 }]); await queue.scan(); queue.selectFormal(true);
+  const saving = queue.applySelected(); queue.cancel(); finish(); await saving;
+  assert.deepEqual(writes, [1]);
+  assert.equal(queue.view().rows[0].canUndo, true);
+  assert.equal(queue.view().rows[1].status, 'ready');
+  await queue.undoAll(); assert.deepEqual(undos, [1]);
+});
+
 test('changing a candidate resets selection and displays that candidate’s changes', async () => {
   const { model } = harness(); let chosen;
   const queue = model.create({ async check() { return { candidates: [{ source: 'A' }, { source: 'B' }], previews: [[{ after: '2024' }], [{ after: '2025' }]] }; }, async apply(_id, _result, index) { chosen = index; return {}; } });
