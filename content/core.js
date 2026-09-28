@@ -41,6 +41,20 @@ var PreprintBridgeCore = (() => {
   function icmlYear(comment) {
     return /\bICML\s*['’,-]?\s*(20\d{2})\b/i.exec(comment)?.[1] || null;
   }
+  function acceptedProceedings(comment, title, arxivId) {
+    if (!/\b(?:accepted|to appear)\b/i.test(comment)) return null;
+    // A preprint author may announce an acceptance before the publisher indexes
+    // the paper. This is provisional metadata, not a publisher DOI or record.
+    const match = /\b(Proceedings of (?:the )?((?:19|20)\d{2})\s+([A-Za-z][^();.]{5,110}?)\s*\(\s*([A-Z][A-Za-z0-9+./&-]{1,15})\s*['’]?(?:20)?(\d{2})\s*\))/i.exec(comment);
+    if (!match || match[2].slice(-2) !== match[5]) return null;
+    const year = match[2];
+    return {
+      source: "arXiv acceptance note", publicationStatus: "accepted",
+      itemType: "conferencePaper", title,
+      venue: match[1], conferenceName: `${match[3].trim()} (${match[4].toUpperCase()} ${year})`,
+      year, url: `https://arxiv.org/abs/${arxivId}`, catalog: "arXiv"
+    };
+  }
   function pmlrVolume(indexHTML, year) {
     for (const m of String(indexHTML).matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)) {
       if (!new RegExp("\\bICML\\s+" + year + "\\b", "i").test(strip(m[1]))) continue;
@@ -130,6 +144,7 @@ var PreprintBridgeCore = (() => {
 
   async function discover({ title, firstAuthor, arxivId }, request) {
     const checks = [], candidates = [];
+    let acceptance = null;
     async function attempt(source, fn) {
       try {
         const result = await fn();
@@ -145,6 +160,7 @@ var PreprintBridgeCore = (() => {
       await attempt("arXiv", async () => {
         const reply = await request("https://arxiv.org/abs/" + arxivId);
         comment = arxivComment(reply.body);
+        acceptance = acceptedProceedings(comment, title, arxivId);
         return null;
       });
       if (checks.at(-1)?.source === "arXiv" && checks.at(-1).outcome === "not_found") {
@@ -174,7 +190,12 @@ var PreprintBridgeCore = (() => {
       const reply = await request(url);
       return fromCrossref(parseJSON(reply.body, reply.contentType, "Crossref"), title, firstAuthor);
     });
+    if (!candidates.length && acceptance) {
+      candidates.push(acceptance);
+      checks.push({ source: "arXiv acceptance note", outcome: "accepted" });
+      return { status: "accepted", candidates, checks };
+    }
     return { status: candidates.length ? "found" : checks.some(c => c.outcome === "error") ? "partial_failure" : "not_found", candidates, checks };
   }
-  return { arxivID, sameTitle, parseJSON, arxivComment, icmlYear, pmlrVolume, pmlrLink, fromPMLR, fromDBLP, fromCrossref, discover };
+  return { arxivID, sameTitle, parseJSON, arxivComment, icmlYear, acceptedProceedings, pmlrVolume, pmlrLink, fromPMLR, fromDBLP, fromCrossref, discover };
 })();

@@ -3,6 +3,7 @@ var PreprintBridge;
 
 async function startup({ rootURI }) {
   await Zotero.initializationPromise;
+  PreprintBridge?.stop();
   // Zotero registers bundled locale/*.ftl files automatically. The scripts
   // are loaded directly from rootURI, so no chrome registration is needed.
   const scope = { Zotero, Services };

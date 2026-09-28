@@ -1,8 +1,10 @@
 /* global PreprintBridgeCCFEntries */
 var PreprintBridgeCCF = (() => {
   const entries = PreprintBridgeCCFEntries;
+  const edition = /\s*[（(]\s*([A-Z][A-Z0-9+./&-]{1,19})(?:\s*(?:19|20)?\d{2})?\s*[）)]\s*$/i;
   const key = value => String(value || "").normalize("NFKC").toLowerCase()
     .replace(/[（(]原[^）)]*[）)]/g, "")
+    .replace(edition, "")
     .replace(/^proceedings of (?:the )?/i, "")
     .replace(/\b\d+(?:st|nd|rd|th)\b/gi, "")
     .replace(/\b(?:19|20)\d{2}\b/g, "")
@@ -22,7 +24,9 @@ var PreprintBridgeCCF = (() => {
     }
     for (const name of names) {
       const normalized = String(name).trim().toUpperCase();
-      const alias = normalized === "KDD" ? "SIGKDD" : normalized;
+      const suffix = edition.exec(normalized)?.[1];
+      const abbreviation = suffix || normalized;
+      const alias = abbreviation === "KDD" ? "SIGKDD" : abbreviation;
       if (!/^[A-Z0-9+./&-]{2,20}$/.test(alias)) continue;
       const matches = pool.filter(entry => entry.acronym.toUpperCase() === alias);
       if (matches.length === 1) return matches[0];

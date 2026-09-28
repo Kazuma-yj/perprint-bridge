@@ -1,5 +1,5 @@
 preprint-bridge-check =
-    .label = 查找正式发表版本（确认后更新）
+    .label = 核对发表或录用信息（确认后更新）
 preprint-bridge-copy =
     .label = 将正式版本信息复制到预印本
 preprint-bridge-refresh =

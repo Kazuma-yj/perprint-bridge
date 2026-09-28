@@ -8,14 +8,19 @@ after confirmation. Its Zotero item ID, existing PDF, annotations, notes, tags,
 and collections remain attached. It is an independently written project; it
 does not bundle the arXiv Workflow plugin or call Semantic Scholar.
 
-## What works in 0.1.3
+## What works in 0.1.4
 
-- Right-click a single arXiv **preprint parent item** and choose **Find
-  published version (review first)**. Do not select the PDF attachment.
+- Right-click a single arXiv **preprint parent item** and choose **Check
+  publication or acceptance (review first)**. Do not select the PDF attachment.
 - ICML papers whose arXiv comments contain `ICML 20xx` are checked against
   PMLR's official volume directory, volume index, and paper metadata.
 - Other items are searched in DBLP and then Crossref. Title and first author
   must agree; arXiv / CoRR records are excluded.
+- If no publisher record is indexed but the arXiv comments explicitly state
+  acceptance with a full proceedings name, year, and acronym, you may review
+  and save provisional conference metadata. The arXiv URL stays in place, no
+  unverified publisher DOI is added, and the item remains eligible for a later
+  publisher-record search.
 - Every source reports `found`, `no match`, or an explicit error. An HTTP 200
   anti-bot HTML page is diagnosed as an error, not treated as valid JSON or as
   proof of no publication.
@@ -29,7 +34,9 @@ does not bundle the arXiv Workflow plugin or call Semantic Scholar.
   existing PMLR conference-paper records updated by previous versions.
 - CCF 2026 ranks appear in the review dialog and in the item's Extra field
   when the publication matches an unambiguous entry in the supplied directory.
-  ICML is ranked A as a conference in Artificial Intelligence (PDF page 57).
+  ICML is A and IMC is B. Conference names include an abbreviation and year,
+  for example `(ICML 2025)` or `(IMC 2026)`. Extra holds only the arXiv ID,
+  a short CCF label, and provisional status where applicable, preserving user notes.
 
 The automatic discovery deliberately accepts only exact normalized titles and
 first-author matches. If a published paper's title changes, import its official
@@ -38,8 +45,8 @@ titles trigger a separate confirmation before anything is changed.
 
 ## Install
 
-Download [preprint-bridge-0.1.3.xpi](https://github.com/Kazuma-yj/perprint-bridge/raw/refs/heads/main/dist/preprint-bridge-0.1.3.xpi) and drag it into **Zotero → Tools → Plugins**.
-Zotero 10.0.x is required. Discard the previous 0.1.0–0.1.2 packages. Restart Zotero if the menu does not appear. Because this
+Build `dist/preprint-bridge-0.1.4.xpi` and drag it into **Zotero → Tools → Plugins**. Once this version is published, its download will be available at `https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/dist/preprint-bridge-0.1.4.xpi`.
+Zotero 10.0.x is required. Discard older packages and restart Zotero after installing. Because this
 is a first release, try it on a copy of a record before using it on your library.
 
 ## Build and test
@@ -60,8 +67,10 @@ the context menu, translations, and API behavior before publishing a release.
    matching PMLR volume; accept a matching official PMLR record.
 2. Otherwise query DBLP and validate both the response format and candidate.
 3. Otherwise query Crossref for a matching DOI publication.
-4. If any source failed and none matched, report **incomplete search** rather
-   than **unpublished**. Failed sources are shown to the user and Zotero debug log.
+4. If there is still no formal record but the arXiv acceptance note gives a
+   complete proceedings citation, offer that provisional status for review.
+5. If any source failed and neither a formal nor a provisional record was
+   found, report **incomplete search** rather than **unpublished**.
 
 Each HTTP request has a 30-second timeout and a body-size cap. A large PMLR
 volume index may take longer than a small DBLP query. No automatic retry loop
@@ -78,8 +87,8 @@ extracted from the provided CCF 2026 directory (605 unambiguous table rows).
 Run `python scripts/extract_ccf.py path/to/ccf-2026.pdf` with `pdfplumber`
 installed to regenerate the data from that 72-page document.
 
-The user confirmed that 0.1.2 installed and converted one ICML entry in
-Zotero 10.0.3. The additional 0.1.3 features still need a live client check.
+The user confirmed that an earlier version converted one ICML entry in
+Zotero 10.0.3. Version 0.1.4 still needs a live client check.
 If installation still reports incompatibility, capture the `addons.xpi` lines
 from **Tools → Developer → Error Console** immediately after the attempt and
 provide the Zotero debug report ID.

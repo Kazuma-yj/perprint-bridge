@@ -77,6 +77,32 @@ test('source failures do not become a false unpublished result', async () => {
   assert.equal(result.candidates.length, 0);
 });
 
+test('accepted IMC paper remains provisional when DBLP serves HTML and Crossref has no record', async () => {
+  const target = 'Behavioral Consistency and Transparency Analysis on Large Language Model API Gateways';
+  const result = await core.discover({ title: target, firstAuthor: 'Lin', arxivId: '2604.21083' }, async url => {
+    if (url.includes('arxiv.org')) return { contentType: 'text/html', body: '<td class="tablecell comments mathjax">11 pages. Initially submitted to IMC 2026 Cycle 1; accepted on March 13, 2026. To appear in Proceedings of the 2026 ACM Internet Measurement Conference (IMC \'26)</td>' };
+    if (url.includes('dblp.org')) return { contentType: 'text/html', body: '<!doctype html><title>Checking your browser</title>' };
+    return { contentType: 'application/json', body: '{"message":{"items":[]}}' };
+  });
+  assert.equal(result.status, 'accepted');
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.candidates[0].conferenceName, 'ACM Internet Measurement Conference (IMC 2026)');
+  assert.equal(result.candidates[0].publicationStatus, 'accepted');
+  assert.equal(result.candidates[0].url, 'https://arxiv.org/abs/2604.21083');
+  assert.equal(result.candidates[0].doi, undefined);
+  assert.equal(result.checks[1].outcome, 'error');
+});
+
+test('a publisher record takes precedence over an arXiv acceptance note', async () => {
+  const result = await core.discover({ title, firstAuthor: 'Gu', arxivId: '2502.07776' }, async url => {
+    if (url.includes('arxiv.org')) return { body: '<td class="tablecell comments">To appear in Proceedings of the 2025 International Conference on Machine Learning (ICML \'25)</td>', contentType: 'text/html' };
+    if (url.includes('dblp.org')) return { body: '<html>bot</html>', contentType: 'text/html' };
+    return { body: JSON.stringify({ message: { items: [{ type: 'proceedings-article', title: [title], DOI: '10.1000/paper', author: [{ given: 'Chenchen', family: 'Gu' }], 'container-title': ['Proceedings of ICML'], published: { 'date-parts': [[2025]] } }] } }), contentType: 'application/json' };
+  });
+  assert.equal(result.status, 'found');
+  assert.equal(result.candidates[0].source, 'Crossref');
+});
+
 test('rejects wrong first author and CoRR, accepts matching conference', () => {
   const records = { result: { hits: { hit: [
     { info: { title, venue: 'CoRR', author: 'Gu, Chenchen', ee: 'https://arxiv.org/abs/2502.07776' } },

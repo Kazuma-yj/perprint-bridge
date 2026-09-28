@@ -1,2 +1,3 @@
 dist/*
 !dist/preprint-bridge-0.1.3.xpi
+!dist/preprint-bridge-0.1.4.xpi

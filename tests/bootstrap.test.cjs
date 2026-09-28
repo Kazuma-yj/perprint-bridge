@@ -20,8 +20,16 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
     initializationPromise: Promise.resolve(),
     getMainWindows: () => [window],
     MenuManager: {
-      registerMenu(menu) { menus.set(menu.menuID, menu); return menu.menuID; },
-      unregisterMenu(id) { menus.delete(id); }
+      registerMenu(menu) {
+        const id = `${menu.pluginID}-${menu.menuID}`;
+        if (menus.has(id)) return false;
+        menus.set(id, menu);
+        return id;
+      },
+      unregisterMenu(id) {
+        assert.notEqual(id, false);
+        return menus.delete(id);
+      }
     },
     debug() {}
   };
@@ -33,7 +41,20 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
   const sandbox = vm.createContext({ Zotero, Services, APP_SHUTDOWN: 99 });
   vm.runInContext(fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8'), sandbox);
   await vm.runInContext('startup({ rootURI: "file:///plugin/" })', sandbox);
-  assert.deepEqual([...menus.keys()], ['preprint-bridge-check', 'preprint-bridge-copy', 'preprint-bridge-refresh']);
+  assert.deepEqual([...menus.keys()], [
+    'preprint-bridge@research.local-preprint-bridge-check',
+    'preprint-bridge@research.local-preprint-bridge-copy',
+    'preprint-bridge@research.local-preprint-bridge-refresh'
+  ]);
+  // Restarting within the same process must replace our menus without leaving
+  // false registration IDs behind.
+  await vm.runInContext('startup({ rootURI: "file:///plugin/" })', sandbox);
+  assert.equal(menus.size, 3);
+  vm.runInContext('shutdown({}, 0)', sandbox);
+  assert.equal(menus.size, 0);
+  menus.set('preprint-bridge@research.local-preprint-bridge-check', {});
+  await vm.runInContext('startup({ rootURI: "file:///plugin/" })', sandbox);
+  assert.equal(menus.size, 3);
   vm.runInContext('shutdown({}, 0)', sandbox);
   assert.equal(menus.size, 0);
   assert.equal(removedFTL, true);
