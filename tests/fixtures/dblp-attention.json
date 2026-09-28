@@ -1,0 +1,63 @@
+{
+  "head": {
+    "vars": [
+      "paper",
+      "title",
+      "kind",
+      "venue",
+      "year",
+      "url",
+      "author",
+      "booktitle",
+      "pages",
+      "doi"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "paper": {
+          "type": "uri",
+          "value": "https://dblp.org/rec/conf/nips/VaswaniSPUJGKP17"
+        },
+        "title": {
+          "type": "literal",
+          "value": "Attention is All you Need."
+        },
+        "kind": {
+          "type": "uri",
+          "value": "https://dblp.org/rdf/schema#Inproceedings"
+        },
+        "venue": {
+          "type": "literal",
+          "value": "NIPS"
+        },
+        "year": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#gYear",
+          "type": "literal",
+          "value": "2017"
+        },
+        "url": {
+          "type": "uri",
+          "value": "https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html"
+        },
+        "author": {
+          "type": "literal",
+          "value": "Ashish Vaswani"
+        },
+        "booktitle": {
+          "type": "literal",
+          "value": "Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA"
+        },
+        "pages": {
+          "type": "literal",
+          "value": "5998-6008"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "query-time-ms": 2300,
+    "result-size-total": 1
+  }
+}

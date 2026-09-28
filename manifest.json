@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Preprint Bridge",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Review published or accepted conference metadata without losing Zotero items or attachments.",
   "homepage_url": "https://github.com/Kazuma-yj/perprint-bridge",
   "author": "Kazuma-yj",

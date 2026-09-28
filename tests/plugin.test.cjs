@@ -133,7 +133,7 @@ test('IMC 2026 acceptance is reviewable and remains recheckable without an inven
     locale: 'zh-CN', ItemTypes: { getID: x => x }, debug() {}, getMainWindow: () => null,
     HTTP: { async request(_method, url) {
       if (url.includes('arxiv.org')) return { responseText: '<td class="tablecell comments mathjax">Accepted on March 13, 2026. To appear in Proceedings of the 2026 ACM Internet Measurement Conference (IMC \'26)</td>', getResponseHeader: () => 'text/html' };
-      if (url.includes('dblp.org')) return { responseText: '<!doctype html><title>Bot check</title>', getResponseHeader: () => 'text/html' };
+      if (url.includes('dblp.')) return { responseText: '<!doctype html><title>Bot check</title>', getResponseHeader: () => 'text/html' };
       return { responseText: '{"message":{"items":[]}}', getResponseHeader: () => 'application/json' };
     } }
   }, Services: { prompt: {
@@ -163,4 +163,27 @@ test('IMC 2026 acceptance is reviewable and remains recheckable without an inven
   let visible = false;
   menus[0].menus[0].onShowing(null, { items: [item], setVisible(value) { visible = value; } });
   assert.equal(visible, true);
+});
+
+test('disabling the plugin during a search prevents late prompts or item writes', async () => {
+  let resolveRequest, requests = 0, prompts = 0, writes = 0;
+  const sandbox = vm.createContext({ URL, Zotero: {
+    locale: 'zh-CN', debug() {}, getMainWindow: () => null,
+    HTTP: { request() { requests++; return new Promise(resolve => { resolveRequest = resolve; }); } },
+    MenuManager: { unregisterMenu() {} }
+  }, Services: { prompt: { alert() { prompts++; }, confirm() { prompts++; return true; } } } });
+  for (const file of ['core.js', 'ccf-data.js', 'ccf.js', 'plugin.js']) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'content', file), 'utf8'), sandbox);
+  }
+  const plugin = sandbox.PreprintBridge;
+  const item = { id: 71, getDisplayTitle: () => 'Some Paper', getCreators: () => [{ lastName: 'Smith' }],
+    getField: name => name === 'url' ? 'https://arxiv.org/abs/2403.06634' : '',
+    setField() { writes++; }, async saveTx() { writes++; } };
+  const pending = plugin.checkItem(item);
+  plugin.stop();
+  resolveRequest({ responseText: '<html></html>', getResponseHeader: () => 'text/html' });
+  await pending;
+  assert.equal(requests, 1);
+  assert.equal(prompts, 0);
+  assert.equal(writes, 0);
 });

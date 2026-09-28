@@ -1,0 +1,59 @@
+{
+  "head": {
+    "vars": [
+      "paper",
+      "title",
+      "kind",
+      "venue",
+      "year",
+      "url",
+      "author",
+      "booktitle",
+      "pages",
+      "doi"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "paper": {
+          "type": "uri",
+          "value": "https://dblp.org/rec/conf/iclr/HuSWALWWC22"
+        },
+        "title": {
+          "type": "literal",
+          "value": "LoRA: Low-Rank Adaptation of Large Language Models."
+        },
+        "kind": {
+          "type": "uri",
+          "value": "https://dblp.org/rdf/schema#Inproceedings"
+        },
+        "venue": {
+          "type": "literal",
+          "value": "ICLR"
+        },
+        "year": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#gYear",
+          "type": "literal",
+          "value": "2022"
+        },
+        "url": {
+          "type": "uri",
+          "value": "https://openreview.net/forum?id=nZeVKeeFYf9"
+        },
+        "author": {
+          "type": "literal",
+          "value": "Edward J. Hu"
+        },
+        "booktitle": {
+          "type": "literal",
+          "value": "The Tenth International Conference on Learning Representations, ICLR 2022, Virtual Event, April 25-29, 2022"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "query-time-ms": 1587,
+    "result-size-total": 1
+  }
+}

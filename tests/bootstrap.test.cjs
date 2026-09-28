@@ -38,8 +38,14 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
     assert.ok(['content/core.js', 'content/ccf-data.js', 'content/ccf.js', 'content/plugin.js'].includes(relative));
     vm.runInContext(fs.readFileSync(path.join(root, relative), 'utf8'), vm.createContext(target));
   } } };
-  const sandbox = vm.createContext({ Zotero, Services, APP_SHUTDOWN: 99 });
+  const sandbox = vm.createContext({ Zotero, Services, URL, APP_SHUTDOWN: 99 });
   vm.runInContext(fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8'), sandbox);
+  // Zotero resolves these names on the bootstrap global, including before
+  // startup. The reported missing-shutdown warning must not be caused by
+  // accidentally packaging/exporting only startup.
+  for (const method of ['startup', 'shutdown', 'install', 'uninstall', 'onMainWindowLoad', 'onMainWindowUnload']) {
+    assert.equal(typeof sandbox[method], 'function', method);
+  }
   await vm.runInContext('startup({ rootURI: "file:///plugin/" })', sandbox);
   assert.deepEqual([...menus.keys()], [
     'preprint-bridge@research.local-preprint-bridge-check',
@@ -58,4 +64,20 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
   vm.runInContext('shutdown({}, 0)', sandbox);
   assert.equal(menus.size, 0);
   assert.equal(removedFTL, true);
+});
+
+test('disabling while Zotero initializes cancels the pending startup', async () => {
+  let resolveInitialization;
+  let loads = 0;
+  const sandbox = vm.createContext({ URL, APP_SHUTDOWN: 99,
+    Zotero: { initializationPromise: new Promise(resolve => { resolveInitialization = resolve; }), getMainWindows: () => [] },
+    Services: { scriptloader: { loadSubScript() { loads++; } } }
+  });
+  vm.runInContext(fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8'), sandbox);
+  const pending = sandbox.startup({ rootURI: 'file:///plugin/' });
+  sandbox.shutdown({}, 4);
+  resolveInitialization();
+  await pending;
+  assert.equal(loads, 0);
+  assert.equal(sandbox.PreprintBridge, undefined);
 });

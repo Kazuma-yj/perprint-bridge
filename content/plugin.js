@@ -3,6 +3,8 @@ var PreprintBridge = (() => {
   const pluginID = "preprint-bridge@research.local";
   const menus = [];
   const busy = new Set();
+  const discoveryCache = new Map();
+  let generation = 0;
   const zh = () => String(Zotero.locale || "").toLowerCase().startsWith("zh");
   const message = (cn, en) => zh() ? cn : en;
   const win = () => Zotero.getMainWindow();
@@ -32,7 +34,7 @@ var PreprintBridge = (() => {
     let conferenceName = candidate.conferenceName;
     const year = /\b(?:19|20)\d{2}\b/.exec(String(candidate.year || ""))?.[0];
     if (candidate.itemType === "conferencePaper" && ccf && year) {
-      const fullName = String(conferenceName || ccf.title)
+      const fullName = String(!conferenceName || /^[A-Z0-9+./&-]{2,20}(?:\s+\(\d+\))?$/i.test(conferenceName) ? ccf.title : conferenceName)
         .replace(/\s*[（(]\s*[A-Z][A-Z0-9+./&-]{1,19}(?:\s*(?:19|20)?\d{2})?\s*[）)]\s*$/i, "");
       const abbreviation = ccf.acronym === "SIGKDD" ? "KDD" : ccf.acronym;
       conferenceName = `${fullName} (${abbreviation} ${year})`;
@@ -62,7 +64,8 @@ var PreprintBridge = (() => {
   async function request(url, { maxBytes = 1_000_000 } = {}) {
     const response = await Zotero.HTTP.request("GET", url, {
       timeout: 30_000, errorDelayMax: 0,
-      headers: { Accept: /\/api\?|api\.crossref/.test(url) ? "application/json" : "text/html" }
+      headers: { Accept: url.startsWith("https://sparql.dblp.org/") ? "application/sparql-results+json" :
+        /\/api\?|api\.crossref/.test(url) ? "application/json" : "text/html" }
     });
     const body = response.responseText || "";
     if (body.length > maxBytes) throw Error("Response exceeded the size limit for " + new URL(url).hostname);
@@ -160,11 +163,18 @@ var PreprintBridge = (() => {
     const id = arxivOf(item);
     if (!id) return alert(message("请选择带 arXiv 标识的预印本主条目。", "Select an arXiv preprint parent item."));
     if (busy.has(item.id)) return alert(message("此条目正在检索，请稍候。", "This item is already being checked."));
+    const started = generation;
     busy.add(item.id);
     try {
       const result = await PreprintBridgeCore.discover({
         title: item.getDisplayTitle(), firstAuthor: item.getCreators()[0]?.lastName || "", arxivId: id
-      }, request);
+      }, async (url, options) => {
+        if (started !== generation) throw Error("Search cancelled: plugin disabled");
+        const reply = await request(url, options);
+        if (started !== generation) throw Error("Search cancelled: plugin disabled");
+        return reply;
+      }, { cache: discoveryCache });
+      if (started !== generation) return;
       result.candidates = result.candidates.map(withRating);
       log(JSON.stringify(result.checks));
       if (!result.candidates.length) {
@@ -183,12 +193,15 @@ var PreprintBridge = (() => {
         chosen = selection.value;
       }
       const candidate = result.candidates[chosen];
-      if (!confirm(candidate, describe(result))) return;
+      // A failed secondary source is useful in the debug log. Once an
+      // official record is found, keep the review focused on that record.
+      if (!confirm(candidate, candidate.publicationStatus === "accepted" ? describe(result) : "")) return;
       await apply(item, candidate, id);
       alert(candidate.publicationStatus === "accepted" ?
         message("已记录会议录用信息；正式出版信息尚待核对。", "Acceptance recorded; publisher metadata is still pending.") :
         message("已更新原条目的出版信息；请核对作者与 PDF。", "Publication fields updated. Please review creators and the PDF."));
     } catch (error) {
+      if (started !== generation) return;
       log("Update failed: " + (error?.stack || error));
       alert(message("更新失败：", "Update failed: ") + String(error?.message || error));
     } finally { busy.delete(item.id); }
@@ -217,10 +230,12 @@ var PreprintBridge = (() => {
   async function refreshPMLR(item) {
     const volume = pmlrVolumeOf(item);
     if (!volume || busy.has(item.id)) return;
+    const started = generation;
     busy.add(item.id);
     try {
       const url = item.getField("url");
       const reply = await request(url);
+      if (started !== generation) return;
       const candidate = PreprintBridgeCore.fromPMLR(reply.body, url, volume,
         item.getDisplayTitle(), item.getCreators()[0]?.lastName || "");
       if (!candidate) throw Error(message("PMLR 页面与当前题名或作者不匹配。", "PMLR title or author does not match this item."));
@@ -229,6 +244,7 @@ var PreprintBridge = (() => {
       await apply(item, rated, arxivOf(item));
       alert(message("已更新出版信息与 CCF 评级；请核对 PDF 附件。", "Publication metadata and CCF rating updated. Review the PDF attachment."));
     } catch (error) {
+      if (started !== generation) return;
       log("Refresh failed: " + (error?.stack || error));
       alert(message("核对失败：", "Review failed: ") + String(error?.message || error));
     } finally { busy.delete(item.id); }
@@ -272,6 +288,10 @@ var PreprintBridge = (() => {
       }]
     });
   }
-  function stop() { for (const id of menus.splice(0)) Zotero.MenuManager.unregisterMenu(id); }
+  function stop() {
+    ++generation;
+    discoveryCache.clear();
+    for (const id of menus.splice(0)) Zotero.MenuManager.unregisterMenu(id);
+  }
   return { start, stop, checkItem, refreshPMLR, apply };
 })();

@@ -26,7 +26,8 @@ var PreprintBridgeCCF = (() => {
       const normalized = String(name).trim().toUpperCase();
       const suffix = edition.exec(normalized)?.[1];
       const abbreviation = suffix || normalized;
-      const alias = abbreviation === "KDD" ? "SIGKDD" : abbreviation;
+      const alias = abbreviation === "KDD" ? "SIGKDD" : abbreviation === "NIPS" ? "NEURIPS" :
+        /^NAACL-HLT(?:\s+\(\d+\))?$/.test(abbreviation) ? "NAACL" : abbreviation;
       if (!/^[A-Z0-9+./&-]{2,20}$/.test(alias)) continue;
       const matches = pool.filter(entry => entry.acronym.toUpperCase() === alias);
       if (matches.length === 1) return matches[0];

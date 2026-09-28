@@ -1,12 +1,17 @@
 /* global Zotero, Services, APP_SHUTDOWN */
 var PreprintBridge;
+var lifecycleGeneration = 0;
 
 async function startup({ rootURI }) {
+  const generation = ++lifecycleGeneration;
   await Zotero.initializationPromise;
+  // Disable/uninstall can happen while initialization is pending. A stale
+  // startup must not register menus after the user has disabled the add-on.
+  if (generation !== lifecycleGeneration) return;
   PreprintBridge?.stop();
   // Zotero registers bundled locale/*.ftl files automatically. The scripts
   // are loaded directly from rootURI, so no chrome registration is needed.
-  const scope = { Zotero, Services };
+  const scope = { Zotero, Services, URL };
   Services.scriptloader.loadSubScript(rootURI + "content/core.js", scope);
   Services.scriptloader.loadSubScript(rootURI + "content/ccf-data.js", scope);
   Services.scriptloader.loadSubScript(rootURI + "content/ccf.js", scope);
@@ -31,6 +36,7 @@ function onMainWindowLoad({ window }) {
 function onMainWindowUnload() {}
 
 function shutdown(_data, reason) {
+  ++lifecycleGeneration;
   if (reason === APP_SHUTDOWN) return;
   PreprintBridge?.stop();
   PreprintBridge = undefined;

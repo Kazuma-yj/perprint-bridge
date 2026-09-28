@@ -1,0 +1,67 @@
+{
+  "head": {
+    "vars": [
+      "paper",
+      "title",
+      "kind",
+      "venue",
+      "year",
+      "url",
+      "author",
+      "booktitle",
+      "pages",
+      "doi"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "paper": {
+          "type": "uri",
+          "value": "https://dblp.org/rec/conf/naacl/DevlinCLT19"
+        },
+        "title": {
+          "type": "literal",
+          "value": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding."
+        },
+        "kind": {
+          "type": "uri",
+          "value": "https://dblp.org/rdf/schema#Inproceedings"
+        },
+        "venue": {
+          "type": "literal",
+          "value": "NAACL-HLT (1)"
+        },
+        "year": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#gYear",
+          "type": "literal",
+          "value": "2019"
+        },
+        "url": {
+          "type": "uri",
+          "value": "https://doi.org/10.18653/V1/N19-1423"
+        },
+        "author": {
+          "type": "literal",
+          "value": "Jacob Devlin"
+        },
+        "booktitle": {
+          "type": "literal",
+          "value": "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2019, Minneapolis, MN, USA, June 2-7, 2019, Volume 1 (Long and Short Papers)"
+        },
+        "pages": {
+          "type": "literal",
+          "value": "4171-4186"
+        },
+        "doi": {
+          "type": "uri",
+          "value": "https://doi.org/10.18653/V1/N19-1423"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "query-time-ms": 1551,
+    "result-size-total": 1
+  }
+}

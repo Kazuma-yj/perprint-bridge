@@ -1,0 +1,63 @@
+[
+  {
+    "arxivId": "2403.06634",
+    "title": "Stealing Part of a Production Language Model",
+    "firstAuthor": "Carlini",
+    "expectedURL": "https://proceedings.mlr.press/v235/carlini24a.html",
+    "expectedYear": "2024",
+    "expectedCCF": "A"
+  },
+  {
+    "arxivId": "2405.07987",
+    "title": "The Platonic Representation Hypothesis",
+    "firstAuthor": "Huh",
+    "expectedURL": "https://proceedings.mlr.press/v235/huh24a.html",
+    "expectedYear": "2024",
+    "expectedCCF": "A"
+  },
+  {
+    "arxivId": "2502.07776",
+    "title": "Auditing Prompt Caching in Language Model APIs",
+    "firstAuthor": "Gu",
+    "expectedURL": "https://proceedings.mlr.press/v267/gu25b.html",
+    "expectedYear": "2025",
+    "expectedCCF": "A"
+  },
+  {
+    "arxivId": "2106.09685",
+    "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+    "firstAuthor": "Hu",
+    "expectedURL": "https://openreview.net/forum?id=nZeVKeeFYf9",
+    "expectedYear": "2022",
+    "expectedCCF": "A"
+  },
+  {
+    "arxivId": "1706.03762",
+    "title": "Attention Is All You Need",
+    "firstAuthor": "Vaswani",
+    "expectedURL": "https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html",
+    "expectedYear": "2017",
+    "expectedCCF": "A"
+  },
+  {
+    "arxivId": "1810.04805",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "firstAuthor": "Devlin",
+    "expectedURL": "https://doi.org/10.18653/V1/N19-1423",
+    "expectedYear": "2019",
+    "expectedCCF": "B"
+  },
+  {
+    "arxivId": "2604.21083",
+    "title": "Behavioral Consistency and Transparency Analysis on Large Language Model API Gateways",
+    "firstAuthor": "Lin",
+    "expectedURL": "https://arxiv.org/abs/2604.21083",
+    "expectedYear": "2026",
+    "expectedCCF": "B"
+  },
+  {
+    "arxivId": "2609.27252",
+    "title": "What Converges in the Platonic Representation Hypothesis? Structure over Geometry",
+    "firstAuthor": "You"
+  }
+]
