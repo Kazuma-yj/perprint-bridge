@@ -8,7 +8,8 @@ var PreprintBridgeReviewModel = (() => {
     const view = () => ({ phase, closed, rows: rows.map(row => ({
       id: row.id, title: row.title, status: row.status, selected: row.selected,
       candidateIndex: row.candidateIndex, result: row.result, error: row.error,
-      canSelect: ready(row), canUndo: !!row.undo, conflict: row.conflict
+      canSelect: ready(row) && !!row.fields?.length, canUndo: !!row.undo, conflict: row.conflict,
+      fields: [...(row.fields || [])], savedChanges: row.savedChanges
     })) });
     const emit = () => { if (!closed) for (const listener of listeners) listener(view()); };
     function add(entries) {
@@ -54,6 +55,8 @@ var PreprintBridgeReviewModel = (() => {
     function choose(row, index) {
       row.candidateIndex = index;
       row.selected = false;
+      row.fields = row.result.previews[index].map(change => change.field);
+      row.savedChanges = null;
       const candidate = row.result.candidates[index];
       row.status = !row.result.previews[index].length ? "unchanged" : candidate.publicationStatus === "accepted" ? "accepted" : "ready";
     }
@@ -66,13 +69,34 @@ var PreprintBridgeReviewModel = (() => {
     function select(id, value) {
       if (closed || phase !== "idle") return;
       const row = rows.find(row => row.id === id);
-      if (row && ready(row)) { row.selected = !!value; emit(); }
+      if (row && ready(row)) { row.selected = !!value && !!row.fields.length; emit(); }
     }
     function selectFormal(value) {
       if (closed || phase !== "idle") return;
       // Acceptance-only records always require an individual choice.
-      for (const row of rows) if (row.status === "ready") row.selected = !!value;
+      for (const row of rows) if (row.status === "ready") row.selected = !!value && !!row.fields.length;
       emit();
+    }
+    function selectField(id, field, value) {
+      const row = rows.find(row => row.id === id);
+      if (closed || phase !== "idle" || !row || !ready(row)) return;
+      const changes = row.result.previews[row.candidateIndex];
+      const change = changes.find(change => change.field === field);
+      if (!change || change.typeLinked) return;
+      const fields = new Set(row.fields);
+      if (value) fields.add(field); else fields.delete(field);
+      if (value && change.requiresType) fields.add("itemType");
+      for (const c of changes) {
+        if (c.typeLinked) { if (fields.has("itemType")) fields.add(c.field); else fields.delete(c.field); }
+        if (c.requiresType && !fields.has("itemType")) fields.delete(c.field);
+      }
+      row.fields = [...fields]; row.selected = !!fields.size; emit();
+    }
+    function selectFields(id, value) {
+      const row = rows.find(row => row.id === id);
+      if (closed || phase !== "idle" || !row || !ready(row)) return;
+      row.fields = value ? row.result.previews[row.candidateIndex].map(change => change.field) : [];
+      row.selected = !!row.fields.length; emit();
     }
     function rebase(id) {
       const row = rows.find(row => row.id === id);
@@ -92,7 +116,7 @@ var PreprintBridgeReviewModel = (() => {
     }
     async function applySelected() {
       if (closed || phase !== "idle") return;
-      const chosen = rows.filter(row => ready(row) && row.selected);
+      const chosen = rows.filter(row => ready(row) && row.selected && row.fields.length);
       if (!chosen.length) return;
       phase = "updating";
       const token = ++epoch;
@@ -102,7 +126,8 @@ var PreprintBridgeReviewModel = (() => {
           if (closed || token !== epoch) break;
           row.status = "updating"; row.error = ""; emit();
           try {
-            row.undo = await adapter.apply(row.id, row.result, row.candidateIndex);
+            row.undo = await adapter.apply(row.id, row.result, row.candidateIndex, [...row.fields]);
+            row.savedChanges = row.result.previews[row.candidateIndex].filter(change => row.fields.includes(change.field));
             row.status = "updated";
           } catch (error) {
             row.status = "error"; row.error = String(error.message || error);
@@ -135,7 +160,7 @@ var PreprintBridgeReviewModel = (() => {
       } finally { phase = "idle"; emit(); }
     }
     function close() { closed = true; ++epoch; listeners.clear(); }
-    return { add, scan, select, selectFormal, chooseCandidate, rebase, applySelected, undoAll, cancel, close, view,
+    return { add, scan, select, selectFormal, selectField, selectFields, chooseCandidate, rebase, applySelected, undoAll, cancel, close, view,
       subscribe(listener) { listeners.add(listener); listener(view()); return () => listeners.delete(listener); }
     };
   }

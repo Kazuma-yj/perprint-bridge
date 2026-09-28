@@ -34,7 +34,9 @@
     pages: ["页码", "Pages"], volume: ["卷次", "Volume"], series: ["系列", "Series"],
     publisher: ["出版方", "Publisher"], libraryCatalog: ["文库编目", "Library catalog"],
     accessDate: ["访问日期", "Accessed"], extra: ["其他", "Extra"], repository: ["存储库", "Repository"],
-    archiveID: ["存档标识", "Archive ID"], creators: ["作者", "Creators"]
+    archiveID: ["存档标识", "Archive ID"], creators: ["作者", "Creators"],
+    ISSN: ["ISSN", "ISSN"], ISBN: ["ISBN", "ISBN"], issue: ["期号", "Issue"],
+    language: ["语言", "Language"], eventPlace: ["会议地点", "Conference location"]
   };
   const fieldName = field => {
     if (fields[field]) return t(...fields[field]);
@@ -48,9 +50,9 @@
     }
     return typeof value === "object" ? JSON.stringify(value) : String(value);
   }
-  let active = null, latest;
+  let active = null, latest, renderedDetail = null;
   $("heading").textContent = t("核对出版信息", "Review publication information");
-  $("intro").textContent = t("先查看差异，再勾选要更新的论文。", "Review the changes, then choose which papers to update.");
+  $("intro").textContent = t("先查看差异，勾选要更新的论文和字段。", "Review the differences, then choose papers and fields to update.");
   $("queue-heading").textContent = t("本次选中的论文", "PAPERS IN THIS SESSION");
   $("retry").textContent = t("继续 / 重试未完成项", "Continue / retry unfinished");
   $("stop").textContent = t("停止队列", "Stop queue");
@@ -67,7 +69,7 @@
   $("apply").addEventListener("click", () => run(() => session.applySelected()));
   $("undo").addEventListener("click", () => run(() => session.undoAll()));
   $("select-formal").addEventListener("click", () => {
-    const formal = latest.rows.filter(row => row.status === "ready");
+    const formal = latest.rows.filter(row => row.status === "ready" && row.canSelect);
     session.selectFormal(!formal.every(row => row.selected));
   });
   function renderDetail(row, idle) {
@@ -103,10 +105,28 @@
         t("匹配依据：规范化题名与第一作者一致。", "Match basis: normalized title and first author agree."), accepted ? "notice caution" : "notice"));
       if (candidate.url) box.append(el("p", candidate.url, "metadata"));
       if (candidate.ccf) box.append(el("p", `CCF (2026): ${candidate.ccf.grade}` + (candidate.ccf.acronym ? ` (${candidate.ccf.acronym})` : ""), "metadata"));
-      const changes = result.previews[row.candidateIndex];
+      if (!candidate.doi && !accepted) box.append(el("p", t(
+        "已核对的来源未提供正式 DOI；这不表示检索失败。未提供或不适用的字段不会凭空补写。",
+        "The checked sources did not provide a publication DOI; this is not a lookup failure. Missing or inapplicable values are not invented."), "metadata"));
+      const changes = row.status === "updated" ? row.savedChanges : result.previews[row.candidateIndex];
       box.append(el("h3", row.status === "updated" ? t("本次已保存的修改", "Changes saved in this session") : t("将要修改的字段", "Proposed field changes")));
-      if (!changes.length) box.append(el("p", t("这些出版字段与现有记录相同。", "These publication fields already match the record."), "muted"));
+      if (!changes.length) box.append(el("p", t("来源提供的出版字段与现有记录相同，不代表所有字段都已齐全。", "The supplied publication fields match the current record; this does not mean every field is complete."), "muted"));
       else {
+        const selectable = ["ready", "accepted"].includes(row.status);
+        if (row.status !== "updated") {
+          const controls = el("div", undefined, "field-controls");
+          controls.append(el("span", t(`已选 ${row.fields.length}/${changes.length} 个字段`, `${row.fields.length}/${changes.length} fields selected`)));
+          for (const value of [true, false]) {
+            const button = el("button", value ? t("全选字段", "Select all fields") : t("清空选择", "Clear fields"));
+            button.type = "button"; button.disabled = !idle || !selectable;
+            button.dataset.focus = `fields-${value}-${row.id}`;
+            button.addEventListener("click", () => session.selectFields(row.id, value)); controls.append(button);
+          }
+          box.append(controls, el("p", t("只保存勾选的字段；取消勾选的内容保持原样。", "Only checked fields are saved; unchecked values stay unchanged."), "muted field-hint"));
+          if (changes.some(change => change.field === "itemType")) box.append(el("p", t(
+            "更换条目类型时，Zotero 必须转换的字段会联动勾选并标注。选择新类型专用字段，也会勾选条目类型。",
+            "Changing item type also selects Zotero’s required field conversions, marked below. Selecting a field specific to the new type also selects the type change."), "muted field-hint"));
+        }
         const table = el("table"), head = el("thead"), tr = el("tr");
         for (const text of [t("字段", "Field"), t("修改前", "Before"), t("修改后", "After")]) { const th = el("th", text); th.scope = "col"; tr.append(th); }
         head.append(tr); table.append(head);
@@ -114,6 +134,19 @@
         for (const change of changes) {
           const line = el("tr");
           line.append(el("th", fieldName(change.field)), el("td", display(change.before, change.field)), el("td", display(change.after, change.field)));
+          line.dataset.field = change.field;
+          if (row.status !== "updated") {
+            const check = el("input"); check.type = "checkbox";
+            check.checked = row.fields.includes(change.field);
+            check.disabled = !idle || !selectable || !!change.typeLinked;
+            check.dataset.field = change.field; check.dataset.focus = `field-${row.id}-${change.field}`;
+            check.setAttribute("aria-label", t("更新字段：", "Update field: ") + fieldName(change.field));
+            check.addEventListener("change", () => session.selectField(row.id, change.field, check.checked));
+            const label = el("label", undefined, "field-label"); label.append(check, el("span", fieldName(change.field)));
+            line.firstChild.replaceChildren(label);
+            if (change.typeLinked) line.firstChild.append(el("small", t("随条目类型变更", "Linked to item type"), "muted"));
+            if (!check.checked) line.className = "field-unselected";
+          }
           line.firstChild.scope = "row"; body.append(line);
         }
         table.append(body); box.append(table);
@@ -143,7 +176,7 @@
     $("summary").textContent = `${phase} · ${t("已核对", "Checked")} ${checked}/${state.rows.length} · ${t("已勾选", "Selected")} ${selected} · ${t("已更新", "Updated")} ${updated}`;
     $("retry").disabled = !idle || !state.rows.some(row => ["queued", "cancelled", "error", "not_found", "incomplete", "skipped", "undone"].includes(row.status));
     $("stop").hidden = idle; $("stop").disabled = state.phase === "stopping";
-    const formal = state.rows.filter(row => row.status === "ready");
+    const formal = state.rows.filter(row => row.status === "ready" && row.canSelect);
     $("select-formal").disabled = !idle || !formal.length;
     $("select-formal").textContent = formal.length && formal.every(row => row.selected) ? t("取消勾选正式记录", "Deselect publications") : t("勾选全部正式记录", "Select all publications");
     $("apply").textContent = t(`更新勾选的 ${selected} 项`, `Update ${selected} selected`);
@@ -163,8 +196,13 @@
       button.addEventListener("click", () => { active = row.id; render(latest); });
       entry.append(check, button); list.append(entry);
     }
-    if (focusID) Array.from(list.querySelectorAll("[data-focus]")).find(node => node.getAttribute("data-focus") === focusID)?.focus({ preventScroll: true });
+    const detailScroll = renderedDetail === active ? $("detail").scrollTop : 0;
+    const checksOpen = renderedDetail === active && $("detail").querySelector("details")?.open;
     renderDetail(state.rows.find(row => row.id === active), idle);
+    renderedDetail = active;
+    if (checksOpen && $("detail").querySelector("details")) $("detail").querySelector("details").open = true;
+    $("detail").scrollTop = detailScroll;
+    if (focusID) Array.from(document.querySelectorAll("[data-focus]")).find(node => node.getAttribute("data-focus") === focusID)?.focus({ preventScroll: true });
   }
   const unsubscribe = session.subscribe(render);
   window.addEventListener("unload", () => { unsubscribe(); controller.onClose?.(); session.close(); }, { once: true });

@@ -148,6 +148,9 @@ var PreprintBridge = (() => {
       else if (/arxiv\./i.test(oldDOI)) item.setField("DOI", "");
       if (candidate.pages) item.setField("pages", candidate.pages);
       if (candidate.volume) item.setField("volume", candidate.volume);
+      for (const field of ["ISSN", "ISBN", "issue", "language", "eventPlace"]) {
+        if (candidate[field] && validField(field, item.itemType)) item.setField(field, candidate[field]);
+      }
       if (candidate.itemType === "conferencePaper") {
         item.setField("proceedingsTitle", candidate.venue);
         if (candidate.series) item.setField("series", candidate.series);
@@ -172,6 +175,19 @@ var PreprintBridge = (() => {
   }
 
   const snapshot = item => JSON.parse(JSON.stringify(item.toJSON()));
+  function validField(field, type) {
+    const id = Zotero.ItemFields?.getID?.(field);
+    return id ? Zotero.ItemFields.isValidForType(id, Zotero.ItemTypes.getID(type)) :
+      // Only used by simple adapters without the Zotero field registry.
+      !(["proceedingsTitle", "conferenceName", "eventPlace"].includes(field) && type !== "conferencePaper" ||
+        field === "publicationTitle" && type !== "journalArticle");
+  }
+  function differences(before, after) {
+    const ignored = new Set(["key", "version", "dateAdded", "dateModified"]);
+    return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+      .filter(field => !ignored.has(field) && JSON.stringify(before[field] || "") !== JSON.stringify(after[field] || ""))
+      .map(field => ({ field, before: before[field] || "", after: after[field] || "" }));
+  }
   function fingerprint(value) {
     const sort = input => Array.isArray(input) ? input.map(sort) : input && typeof input === "object" ?
       Object.fromEntries(Object.keys(input).sort().map(key => [key, sort(input[key])])) : input;
@@ -186,10 +202,18 @@ var PreprintBridge = (() => {
     const before = clone.toJSON();
     writeFields(clone, candidate, arxivId, options);
     const after = clone.toJSON();
-    const ignored = new Set(["key", "version", "dateAdded", "dateModified"]);
-    return [...new Set([...Object.keys(before), ...Object.keys(after)])]
-      .filter(field => !ignored.has(field) && JSON.stringify(before[field] || "") !== JSON.stringify(after[field] || ""))
-      .map(field => ({ field, before: before[field] || "", after: after[field] || "" }));
+    const changes = differences(before, after);
+    if (before.itemType !== after.itemType) {
+      const converted = item.clone();
+      converted.setType(Zotero.ItemTypes.getID(after.itemType));
+      const linked = new Set(differences(before, converted.toJSON()).map(change => change.field));
+      for (const change of changes) {
+        if (change.field === "itemType") continue;
+        change.typeLinked = linked.has(change.field);
+        change.requiresType = !validField(change.field, before.itemType);
+      }
+    }
+    return changes;
   }
   function createReview(items = selected()) {
     const started = generation;
@@ -238,13 +262,32 @@ var PreprintBridge = (() => {
         return { ...result, baseline: snapshot(item), manualOverride: true,
           previews: result.candidates.map(candidate => preview(item, candidate, result.arxivId, { allowTitleChange: true })) };
       },
-      async apply(id, result, index) {
+      async apply(id, result, index, selectedFields) {
         const item = itemMap.get(id);
         ensure(item, result.baseline);
         const before = snapshot(item);
         busy.add(id);
         try {
-          await apply(item, result.candidates[index], result.arxivId, { allowTitleChange: !!result.manualOverride });
+          const changes = result.previews[index];
+          const fields = new Set(selectedFields);
+          if (!fields.size || [...fields].some(field => !changes.some(change => change.field === field))) throw Error("Invalid field selection");
+          const typeSelected = fields.has("itemType");
+          if (changes.some(change => change.typeLinked && fields.has(change.field) !== typeSelected ||
+            change.requiresType && fields.has(change.field) && !typeSelected)) throw Error("Review the fields linked to the item type change");
+          const desired = snapshot(item);
+          for (const change of changes) if (fields.has(change.field)) {
+            if (change.after === "") delete desired[change.field];
+            else desired[change.field] = change.after;
+          }
+          try {
+            item.fromJSON(desired, { strict: true });
+            // Reject any implicit type conversion that would change unchecked
+            // data, even if Zotero's field conversion rules change in future.
+            if (differences(desired, snapshot(item)).length) throw Error(message(
+              "此选择会连带修改未勾选的字段，请重新核对条目类型。",
+              "This selection would also change unchecked fields. Review the item type."));
+            await item.saveTx();
+          } catch (error) { item.fromJSON(before, { strict: true }); throw error; }
           return { before, after: snapshot(item) };
         } finally { if (started === generation) busy.delete(id); }
       },

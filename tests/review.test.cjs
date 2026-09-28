@@ -200,3 +200,51 @@ test('pacing spaces requests, aborts during a wait, and cools down both DBLP hos
   await other('https://arxiv.org/first');
   await assert.rejects(other('https://arxiv.org/second', {}, () => { if (cancelled) throw Error('Cancelled'); }), /Cancelled/);
 });
+
+test('individual conference fields save independently and undo restores only this operation’s snapshot', async () => {
+  const env = harness({ request: () => ({ message: { type: 'proceedings-article', DOI: '10.1000/example',
+    title: ['Example Paper'], author: [{ family: 'Smith' }], 'container-title': ['Full proceedings'],
+    published: { 'date-parts': [[2025]] }, publisher: 'Publisher', event: { name: 'ICML', location: 'Vancouver' } } }) });
+  const item = env.item(1, { itemType: 'conferencePaper', proceedingsTitle: 'Proc', publisher: 'PM', conferenceName: 'Manual name', extra: 'Keep this note' });
+  const before = item.toJSON(), queue = env.plugin.createReview([item]);
+  await queue.scan(); queue.selectFields(1, false);
+  queue.select(1, true); await queue.applySelected(); assert.equal(item.saves, 0);
+  queue.selectField(1, 'conferenceName', true);
+  assert.equal(queue.view().rows[0].selected, true);
+  await queue.applySelected();
+  assert.match(item.data.conferenceName, /\(ICML 2025\)$/);
+  for (const field of Object.keys(before).filter(f => f !== 'conferenceName')) assert.deepEqual(item.toJSON()[field], before[field]);
+  assert.deepEqual(plain(queue.view().rows[0].savedChanges.map(c => c.field)), ['conferenceName']);
+  await queue.undoAll();
+  const after = item.toJSON(); delete after.dateModified; assert.deepEqual(after, before);
+});
+
+test('type-specific fields select the required conversion; type deselection protects preprint fields', async () => {
+  const env = harness(), item = env.item(1, { title: 'example paper', archiveID: 'Keep this ID' });
+  const queue = env.plugin.createReview([item]); await queue.scan();
+  queue.selectField(1, 'itemType', false);
+  assert.ok(!queue.view().rows[0].fields.includes('archiveID'));
+  assert.ok(!queue.view().rows[0].fields.includes('publicationTitle'));
+  queue.selectFields(1, false); queue.selectField(1, 'title', true);
+  await queue.applySelected();
+  assert.equal(item.data.title, 'Example Paper'); assert.equal(item.itemType, 'preprint'); assert.equal(item.data.archiveID, 'Keep this ID');
+  await queue.undoAll(); await queue.scan({ retry: true }); queue.selectFields(1, false);
+  queue.selectField(1, 'publicationTitle', true);
+  assert.ok(queue.view().rows[0].fields.includes('itemType'));
+  assert.ok(queue.view().rows[0].fields.includes('archiveID'));
+  queue.selectField(1, 'archiveID', false); // mandatory conversion cannot be silently excluded
+  assert.ok(queue.view().rows[0].fields.includes('archiveID'));
+  await queue.applySelected();
+  assert.equal(item.itemType, 'journalArticle'); assert.equal(item.data.publicationTitle, 'Machine Learning');
+  assert.equal(item.data.title, 'example paper'); assert.equal(item.data.url, 'https://arxiv.org/abs/2401.01234');
+});
+
+test('unchecking fields survives batch paper selection and a later edit still requires re-preview', async () => {
+  const env = harness(), item = env.item(1), queue = env.plugin.createReview([item]); await queue.scan();
+  queue.selectFields(1, false); queue.selectField(1, 'date', true); queue.selectFormal(false); queue.selectFormal(true);
+  assert.deepEqual(plain(queue.view().rows[0].fields), ['date']);
+  item.data.extra = 'Later edit'; await queue.applySelected(); assert.equal(item.saves, 0);
+  queue.rebase(1); assert.equal(queue.view().rows[0].selected, false);
+  queue.selectFields(1, false); queue.selectField(1, 'date', true); await queue.applySelected();
+  assert.equal(item.data.extra, 'Later edit'); assert.equal(item.itemType, 'preprint'); assert.equal(item.data.date, '2024');
+});

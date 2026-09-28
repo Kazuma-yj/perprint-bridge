@@ -29,6 +29,66 @@ const pages = new Map([
   ['https://proceedings.mlr.press/v267/gu25b.html', pmlrPage]
 ]);
 
+test('the reported ICML 2025 paper supplies ISSN and language; its official volume supplies event location, not a fabricated DOI', async () => {
+  const fixture = require('./fixtures/icml-2025-metadata.json');
+  const item = { title, firstAuthor: 'Gu', url: fixture.sources[0], published: true }, calls = [];
+  const cache = new Map();
+  const request = async url => { calls.push(url); return { body: url === item.url ? fixture.paper : fixture.volume, contentType: 'text/html' }; };
+  const result = await core.resolvePublication(item, request, { cache });
+  const c = result.candidates[0];
+  assert.equal(c.ISSN, '2640-3498'); assert.equal(c.language, 'en');
+  assert.equal(c.eventPlace, 'Vancouver Convention Center, Vancouver, Canada');
+  assert.equal(c.date, '2025-10-06'); assert.equal(c.doi, ''); assert.equal(c.ISBN, '');
+  assert.equal(c.pages, '20477-20496'); assert.equal(c.volume, '267');
+  await core.resolvePublication(item, request, { cache });
+  assert.equal(calls.filter(url => url === fixture.sources[1]).length, 1);
+});
+
+test('PMLR DOI is read if explicitly supplied, and optional volume failure retains the verified paper', async () => {
+  const fixture = require('./fixtures/icml-2025-metadata.json');
+  const item = { title, firstAuthor: 'Gu', url: fixture.sources[0] };
+  for (const doi of ['10.1234/publisher-record', '10.48550/arXiv.2502.07776']) {
+    const result = await core.resolvePublication(item, async url => {
+      if (url !== item.url) throw Error('HTTP 503');
+      return { body: fixture.paper + `<meta name="citation_doi" content="${doi}">` };
+    });
+    assert.equal(result.status, 'found'); assert.equal(result.candidates[0].doi, doi.includes('arXiv') ? '' : doi);
+    assert.equal(result.candidates[0].ISSN, '2640-3498');
+    assert.ok(result.checks.some(c => c.source === 'PMLR volume' && c.outcome === 'error'));
+  }
+  assert.throws(() => core.pmlrVolumeMetadata(fixture.volume, '999'), /different volume/);
+  assert.throws(() => core.pmlrVolumeMetadata('<html>bot check</html>', '267'), /missing/);
+});
+
+test('a DBLP DOI link is followed to the same Crossref record for missing fields, never a different DOI', async () => {
+  const item = { title: 'Example Paper', firstAuthor: 'Smith' };
+  const db = { result: { hits: { hit: [{ info: { title: item.title, authors: { author: 'Alex Smith' },
+    type: 'Conference and Workshop Papers', venue: 'ICML', year: '2025', ee: 'https://doi.org/10.1234/paper' } }] } } };
+  for (const DOI of ['10.1234/paper', '10.1234/another']) {
+    const calls = [];
+    const result = await core.resolvePublication(item, async url => {
+      calls.push(url);
+      return { body: JSON.stringify(url.includes('dblp.org') ? db : { message: {
+        type: 'proceedings-article', DOI, title: [item.title], author: [{ family: 'Smith' }],
+        'container-title': ['Full proceedings'], published: { 'date-parts': [[2025, 7, 13]] },
+        ISBN: ['978-1-23456-789-0'], ISSN: ['1234-5678'], issue: '2', language: 'en',
+        event: { name: 'ICML', location: 'Vancouver' }
+      } }), contentType: 'application/json' };
+    });
+    assert.equal(calls.length, 2); const c = result.candidates[0]; assert.equal(c.doi, '10.1234/paper');
+    if (DOI.endsWith('another')) assert.equal(c.ISBN, undefined);
+    else { assert.equal(c.ISBN, '978-1-23456-789-0'); assert.equal(c.ISSN, '1234-5678');
+      assert.equal(c.issue, '2'); assert.equal(c.eventPlace, 'Vancouver'); assert.equal(c.date, '2025-07-13'); }
+  }
+});
+
+test('Crossref proceedings titles in event.name do not replace a usable conference name', () => {
+  const record = require('./fixtures/crossref-publications.json').records[2].record;
+  const withEvent = { ...record, event: { name: record['container-title'][0], location: 'Minneapolis, Minnesota' } };
+  const c = core.fromCrossref({ message: { items: [withEvent] } }, record.title[0], 'Devlin')[0];
+  assert.equal(c.conferenceName, ''); assert.equal(c.eventPlace, 'Minneapolis, Minnesota');
+});
+
 test('arXiv ID extraction handles URL, Extra, and DOI', () => {
   assert.equal(core.arxivID('https://arxiv.org/abs/2502.07776v2'), '2502.07776');
   assert.equal(core.arxivID('arXiv:2502.07776 [cs.CL]'), '2502.07776');

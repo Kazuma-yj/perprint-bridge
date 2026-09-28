@@ -42,9 +42,9 @@ const { chromium } = require('playwright');
               { field: 'extra', before: 'Reader note', after: 'Reader note\narXiv: 2403.06634\nCCF (2026): A (ICML)' }]],
             checks: [{ source: 'arXiv', outcome: 'checked' }, { source: 'PMLR', outcome: 'found' }] };
         },
-        async apply(id) {
+        async apply(id, _result, _index, fields) {
           if (state.changed) throw Object.assign(Error('Item changed after review'), { code: 'ITEM_CHANGED' });
-          state.writes.push(id); return { id };
+          state.fields = fields; state.writes.push(id); return { id };
         },
         rebase(_id, result) {
           state.changed = false;
@@ -88,6 +88,22 @@ const { chromium } = require('playwright');
     await page.waitForFunction(() => fixture.state.undo.length === 1);
     assert.match(await page.locator('#detail').innerText(), /已恢复到本次更新前/);
     checks.push('selected update, inline success, undo, no success alert');
+
+    await page.reload(); await page.waitForFunction(() => fixture.session.view().phase === 'idle');
+    await page.getByRole('button', { name: '清空选择', exact: true }).click();
+    assert.equal(await page.locator('#apply').isDisabled(), true);
+    await page.locator('#detail input[data-field="conferenceName"]').check();
+    assert.equal(await page.locator('.row input').nth(0).isChecked(), true);
+    assert.equal(await page.locator('#detail input[data-field="pages"]').isChecked(), false);
+    await page.locator('#detail input[data-field="pages"]').focus();
+    await page.keyboard.press('Space');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.field), 'pages');
+    await page.keyboard.press('Space');
+    await page.locator('#apply').click(); await page.waitForFunction(() => fixture.state.writes.length === 1);
+    assert.deepEqual(await page.evaluate(() => fixture.state.fields), ['conferenceName']);
+    assert.equal(await page.locator('#detail tbody tr').count(), 1);
+    assert.equal(await page.locator('#detail tbody tr').getAttribute('data-field'), 'conferenceName');
+    checks.push('individual field checkboxes enable the paper, retain keyboard focus, and show only saved changes');
 
     await page.reload(); await page.waitForFunction(() => fixture.session.view().phase === 'idle');
     await page.locator('.row input').nth(0).check();

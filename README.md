@@ -2,24 +2,24 @@
 
 **Find published versions, update publication information and check CCF ratings while keeping your Zotero annotations.**
 
-[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.2.1.md)
+[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.3.0.md)
 
 Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the conference or journal version of a preprint and refresh existing publication records. Review the metadata, then update your existing item after confirmation. Your item identity, attachments, annotations, notes, tags, and collection membership stay in place.
 
 ## Features
 
 - **Find published versions:** look for matching conference papers and journal articles without an API key, then review the result before updating.
-- **Complete publication information:** fill in the proceedings or journal title, publication date, DOI, pages and volume when available. Recognized conferences include a full name, abbreviation and year, such as `(ICML 2024)` or `(KDD 2026)`.
+- **Complete publication information:** fill in the proceedings or journal title, publication date, DOI, pages, volume, ISSN, ISBN, issue, language and conference location when available. Recognized conferences include a full name, abbreviation and year, such as `(ICML 2024)` or `(KDD 2026)`.
 - **CCF rankings, including batch updates:** match existing conference or journal names locally and update the 2026 grade in Extra. Journals without abbreviations can match by full name. The bundled dataset covers part of the directory; uncertain matches stay unranked.
 - **Acceptance tracking:** explicit arXiv acceptance notes can be saved as provisional metadata and checked again after proceedings are published.
-- **Batch review and field differences:** queue several papers, compare before/after values in one window, then update only selected records. Stop, continue or retry unfinished items.
+- **Batch review and field differences:** queue several papers, compare before/after values in one window, then update only the checked fields of selected records. Stop, continue or retry unfinished items.
 - **Undo within the review window:** restore this session’s publication updates. Later manual edits are protected by default, with an explicit overwrite option after reviewing differences.
 - **Return to arXiv:** open the original preprint page after the item's URL has been updated to the published version.
 - **One consistent Chinese/English menu** for all paper types, with distinct states for publication records, acceptance notes, unavailable sources and no match.
 
 ## Install
 
-1. Download **`preprint-bridge-1.2.1.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
+1. Download **`preprint-bridge-1.3.0.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File…** from the gear menu and select the XPI.
 3. Restart Zotero normally and enable Preprint Bridge if needed.
 
@@ -41,7 +41,7 @@ Right-click a bibliographic parent item and open **Preprint Bridge**. Its comman
 
 ### Review a preprint or an existing publication
 
-Choose **Preprint Bridge → Review and update publication…**. Compare each paper’s source and before/after fields, select the records you want to change, then click **Update N selected**. Select the bibliographic item, not its PDF attachment. The same command handles different publication sources automatically.
+Choose **Preprint Bridge → Review and update publication…**. Compare each paper’s source and before/after fields, choose the papers and individual fields you want to change, then click **Update N selected**. Select the bibliographic item, not its PDF attachment. The same command handles different publication sources automatically.
 
 A title and first author are required. An arXiv identifier such as `2403.06634` in URL, DOI or Extra helps find the published version, but is not required for title-based searches. An existing publication DOI is checked directly; fallback results cannot substitute a different DOI. Multiple papers are checked sequentially; a failed item does not stop the queue. Stopping or closing the window does not undo already saved changes.
 
@@ -49,8 +49,8 @@ The available fields depend on the publication type and source:
 
 | Publication type | Publication fields |
 | --- | --- |
-| Conference paper | Proceedings title, conference name, date, DOI, pages, volume, and publication link |
-| Journal article | Journal title, date, DOI, pages, volume, and publication link |
+| Conference paper | Proceedings title, conference name, date, DOI, pages, volume, ISSN, ISBN, language, conference location, publication link |
+| Journal article | Journal title, date, DOI, pages, volume, issue, ISSN, language, publication link |
 
 A conference name can read `41st International Conference on Machine Learning (ICML 2024)`.
 
@@ -65,7 +65,10 @@ An acceptance-only result also includes `Publication status: Accepted; proceedin
 
 ### Batch review, overwriting and undo
 
-- Nothing is selected by default. **Select all publications** includes only formal records with field changes; acceptance-only records require individual selection.
+- Each proposed field has a checkbox. Choose publisher, proceedings title, conference name, DOI, Extra, or other changes independently; **Select all fields** and **Clear fields** are also available. Only checked fields are saved and listed as saved changes.
+- Fields start checked; papers start unselected. Adjusting a field selects its paper; zero checked fields disables updating it. Batch paper selection preserves each paper’s field choices. Switching candidates or refreshing a conflicting preview resets field choices and requires selecting the paper again.
+- Fields Zotero must convert with an item type change are explicitly marked and linked. Deselecting the type clears dependent fields; selecting a field specific to the new type also selects the required conversion.
+- No paper is selected by default. **Select all publications** includes only formal records with field changes; acceptance-only records require individual selection.
 - **Publication found** means normalized title and first author matched. **Acceptance note only** means the evidence is the author’s arXiv note, without a publication record. These describe evidence, not confidence scores.
 - Successful updates appear inline: “Publication information updated. The author list and PDFs are unchanged.” No warning-style success alert is shown.
 - If you edit an item after lookup, choose **Review changes against current data…**, inspect the current/proposed values, then select it again to overwrite. Manual edits are not permanently locked.
@@ -89,9 +92,15 @@ Choose **Preprint Bridge → Open arXiv preprint**. The command also works after
 
 ### What changes
 
-The plugin updates publication fields on the original item. Missing pages, volume or DOI in a source do not erase existing values; an arXiv DOI is removed when moving to a publication record. Existing notes in Extra are preserved, while older fields generated by this plugin are compacted.
+The review window saves only checked fields on the original item. Missing pages, volume or DOI in a source do not erase existing values; removing an arXiv DOI is proposed when moving to a publication record and follows your field selection. Existing notes in Extra are preserved, while older fields generated by this plugin are compacted.
 
 **The original author list and PDF files remain.** Review them against the final publication, especially if authors changed between versions. The plugin does not download a replacement PDF, move annotations between PDFs, merge items, or delete duplicates.
+
+### Why are some fields still empty?
+
+A verified publication need not supply a DOI, ISBN or issue. **No field changes** means the supplied metadata matches, not that every field is complete. Missing values are not invented, and an arXiv DOI is not used as a publisher DOI.
+
+For example, the official page for *Auditing Prompt Caching in Language Model APIs* supplies ISSN `2640-3498`, and its volume page supplies the Vancouver conference location. This version reads both; the paper page and recommended citation do not provide a publisher DOI or ISBN. Conference location is stored separately from publisher location. [Paper](https://proceedings.mlr.press/v267/gu25b.html) · [Volume](https://proceedings.mlr.press/v267/)
 
 ## How matching works
 

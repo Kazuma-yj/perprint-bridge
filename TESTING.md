@@ -1,20 +1,28 @@
-# 1.2.1 validation / 测试记录
+# 1.3.0 validation / 测试记录
 
-Date: 2026-09-28. Version: **1.2.1**.
+Date: 2026-09-28. Version: **1.3.0**.
 
-**69 automated tests passed.** Eleven workflow cases cover ten distinct papers: nine publication matches, one acceptance-only record, and one inconclusive search. This release replays cached responses captured earlier on the same date, including three DOI records and eight arXiv cases. BERT appears in both the preprint and published-DOI workflows. Each match checks the metadata written to a mock Zotero item. The final replay uses cached responses; network/cache counts are recorded in the JSON report.
+**76 Node automated tests passed.** New regressions cover independent field selection, exact save/undo, type-conversion dependencies, empty selections, manual edits, official ICML 2025 ISSN/location, absent versus supplied DOI, mismatched volumes, optional-source failures, and exact-DOI enrichment. The BERT case also verifies that a proceedings title deposited as an event name does not replace a usable conference label.
 
-Package verification compares every XPI entry to source, checks bootstrap callbacks, and verifies the manifest version, update URL and SHA-256. Release tests cover immutable published assets, draft publication order, failed uploads and conflicting tags.
+**29 actual-XPI checks passed in official Linux Zotero 10.0.3.** The reported ICML 2025 paper was recreated in a disposable database with `PM`, `Proc`, and a manually edited conference name. Clicking only the conference-name checkbox preserved the publisher/proceedings fields. ISSN and conference location were then filled separately; DOI, ISBN and publisher location remained empty. Undo restored the previous values. A single-field preprint update preserved its type, archive ID and URL. The suite also exercises real item-type conversion, visible layout, database saves, author/child-note identity, reopening and disable/enable. See [native report](tests/zotero-results-1.3.0.json).
 
-**Native regression:** the actual 1.2.0 XPI reproduces a blank `about:blank` window in official Linux Zotero 10.0.3. The actual 1.2.1 XPI passes 16 native checks, including registered chrome loading, visible layout, real-item preview, database save, undo, reopen and disable/enable. See [native report](tests/zotero-results-1.2.1.json). Tests use a disposable profile and recorded metadata; no user library is modified.
+**Eleven workflow cases across ten distinct papers passed on the final code**, using cached public responses (zero network requests in the final replay). One new exact-DOI Crossref response was fetched during the preceding investigation. This is recorded-response regression, not eleven fresh network lookups. See [workflow report](tests/live-results-1.3.0.json). The reported paper and volume were additionally retrieved from PMLR and reduced to citation-only [fixtures](tests/fixtures/icml-2025-metadata.json).
 
-**Limit:** Windows and macOS have not been tested on-device. Headless Linux Zotero exercises Gecko windows and the item database, but cannot verify OS-specific display behavior.
+The actual XHTML Chromium suite adds a sixth interaction scenario: clear fields, select only conference name, toggle by keyboard without losing focus, save, and show only the selected field in the saved table. Chromium and native Zotero tests are release gates; CI stores screenshots and reports as artifacts. The former 1.2.0 blank-window regression is also rerun against its unchanged XPI.
 
-**All five XHTML interaction scenarios passed in Chromium 151.0.7922.34, with zero page errors.** [Validation run](https://github.com/Kazuma-yj/perprint-bridge/actions/runs/36443503269) · [Browser report](tests/ui-results-1.2.0.json). These browser results are from 1.2.0; its UI assets are unchanged in 1.2.1. The suite remains a CI release gate, alongside the new real Zotero smoke test. It renders the actual packaged UI with a fixture controller; this is distinct from testing the Zotero desktop application.
+Package verification compares every XPI entry with source and checks bootstrap callbacks, manifest versions, update URLs and SHA-256. Release tests cover immutable published assets, draft publication order, failed uploads and conflicting tags.
 
-Menu tests cover a preprint, an accepted conference item, a PMLR record, another conference record, a journal, multiple selections and read-only records. The same main commands remain visible; manual transfer is consistently under Advanced. Batch CCF tests cover mixed selections, unchanged and ambiguous entries, failed saves, cancelled confirmation, concurrent edits and disabling. API contracts were checked against Zotero 10.0.3's official MenuManager and URL-launching source.
+**Limit:** Windows and macOS have not been tested on-device. Linux headless Zotero validates actual Gecko windows and the item database, but not OS-specific display behavior. Native tests use recorded responses in an isolated temporary profile, never a user library.
 
-以下是各样本的具体结果与测试范围。
+## 1.3.0 新增验证
+
+- 出版社、论文集标题、会议名称可分别勾选；未勾选字段不被保存。
+- 不选任何字段时不能更新；批量勾选论文保留字段选择；重新预览后需再次确认。
+- 条目类型必需的转换字段联动；保存前检查隐式变化，不能静默修改未选字段。
+- 仅保存的差异显示在成功结果中；撤销恢复原值，后续手动编辑仍受保护。
+- 官方页面中的 ISSN/语言、卷册中的会议地点被读取；地点不混填，DOI/ISBN 不虚构。
+- 额外卷册读取失败保留已经验证的论文；不同卷册被拒绝；同卷册使用短期缓存。
+- DBLP DOI 链接按相同 DOI 补全 Crossref 详情，拒绝 DOI/类型/题名/作者不符的数据。
 
 ## 1.2.1 白屏回归
 
@@ -84,7 +92,7 @@ node scripts/live-smoke.cjs 2403.06634 10.1038/nature14539
 
 ## 自动回归测试
 
-`npm test`：69 项通过，包括：
+`npm test`：76 项通过，包括：
 
 - 无 arXiv 会议说明时，从官方 ICML 目录查找；排除 GRaM 等工作坊。
 - DBLP 返回 HTTP 200 HTML 时继续检索；429 不触发同源自动重试。
@@ -110,7 +118,7 @@ node scripts/live-smoke.cjs 2403.06634 10.1038/nature14539
 ## 尚需实际客户端验证
 
 运行环境没有 Windows Zotero 10.0.3，不能声称已验证该界面的安装、右键菜单、翻译和重启行为。
-Windows/macOS 客户端验证应在正常模式下安装/启用 1.2.1，覆盖固定子菜单、灰色命令、停止与继续、单篇/多篇出版更新、手改后主动覆盖、窗口内撤销、批量 CCF、重复启停、重启与检查更新。
+Windows/macOS 客户端验证应在正常模式下安装/启用 1.3.0，覆盖固定子菜单、灰色命令、停止与继续、单篇/多篇出版更新、手改后主动覆盖、窗口内撤销、批量 CCF、重复启停、重启与检查更新。
 
 0.1.4 和 0.1.5 的 XPI 均包含 `shutdown`。Zotero 10.0.3 的加载器在找不到插件作用域/回调时也会输出同一句
 `missing bootstrap method`。日志同时存在 `safeMode => true`，因此未将这条警告归因于函数缺失，也未声称警告已完全消除。

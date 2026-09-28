@@ -64,8 +64,10 @@ async function run() {
     report.packageURI = addon.getResourceURI().spec;
     assert(report.packageURI.startsWith('jar:file:'), 'plugin loaded from the actual XPI');
     const fixture = JSON.parse(await IOUtils.readUTF8(Services.env.get('PB_TEST_FIXTURES'))).records[0].record;
+    const icml = JSON.parse(await IOUtils.readUTF8(PathUtils.join(PathUtils.parent(Services.env.get('PB_TEST_FIXTURES')), 'icml-2025-metadata.json')));
     originalRequest = Zotero.HTTP.request;
     Zotero.HTTP.request = async function(method, url, ...args) {
+      if (icml.sources.includes(String(url))) return { responseText: url === icml.sources[0] ? icml.paper : icml.volume, getResponseHeader: () => 'text/html' };
       if (String(url).startsWith('https://api.crossref.org/works/')) {
         return { responseText: JSON.stringify({ message: fixture }), getResponseHeader: () => 'application/json' };
       }
@@ -78,6 +80,7 @@ async function run() {
     item.setField('DOI', fixture.DOI);
     item.setField('url', 'https://example.invalid/test-preprint');
     item.setField('extra', 'Keep this test note');
+    item.setField('archiveID', 'Keep this archive ID');
     item.setCreators([{ firstName: 'Leo', lastName: 'Breiman', creatorType: 'author' }]);
     await item.saveTx();
     const key = item.key, creators = JSON.stringify(item.getCreators());
@@ -111,6 +114,51 @@ async function run() {
       review.document.getElementById('undo').click();
       await until(() => session.view().rows[0].status === 'undone', 'undo finishes');
       assert(item.itemType === 'preprint' && item.getField('extra') === 'Keep this test note', 'undo restores the real item');
+      await session.scan({ retry: true });
+      session.selectFields(item.id, false); session.selectField(item.id, 'date', true);
+      await session.applySelected();
+      assert(session.view().rows[0].status === 'updated', 'single-field update succeeds without changing item type');
+      assert(item.itemType === 'preprint' && item.getField('date') === '2001-10' && item.getField('url') === 'https://example.invalid/test-preprint' && item.getField('archiveID') === 'Keep this archive ID', 'unchecked type, archive ID and URL stay unchanged');
+      await session.undoAll();
+      review.close(); await Zotero.Promise.delay(100);
+
+      const conference = new Zotero.Item('conferencePaper');
+      conference.libraryID = Zotero.Libraries.userLibraryID;
+      for (const [field, value] of Object.entries({ title: 'Auditing Prompt Caching in Language Model APIs',
+        url: icml.sources[0], publisher: 'PM', proceedingsTitle: 'Proc', conferenceName: 'Manual conference name',
+        extra: 'Keep conference note' })) conference.setField(field, value);
+      conference.setCreators([{ firstName: 'Chenchen', lastName: 'Gu', creatorType: 'author' }]);
+      await conference.saveTx();
+      review = await open([conference]);
+      await until(() => review.document.querySelector('.row'), 'conference review window renders');
+      const conferenceSession = review.arguments[0].session;
+      await until(() => conferenceSession.view().phase === 'idle', 'conference metadata lookup completes');
+      assert(conferenceSession.view().rows[0].status === 'ready', 'reported ICML paper produces a real Zotero preview');
+      const fieldCheck = field => review.document.querySelector(`#detail input[data-field="${field}"]`);
+      assert(['publisher', 'proceedingsTitle', 'conferenceName', 'ISSN', 'eventPlace'].every(field => fieldCheck(field)), 'each reported field and recovered metadata has its own checkbox');
+      conferenceSession.selectFields(conference.id, false);
+      fieldCheck('conferenceName').click();
+      assert(!review.document.getElementById('apply').disabled, 'checking a field selects its paper for update');
+      review.document.getElementById('apply').click();
+      await until(() => ['updated', 'error'].includes(conferenceSession.view().rows[0].status), 'selective conference save finishes');
+      assert(conferenceSession.view().rows[0].status === 'updated', 'selective conference update saved successfully');
+      assert(conference.getField('conferenceName').endsWith('(ICML 2025)') && conference.getField('publisher') === 'PM' && conference.getField('proceedingsTitle') === 'Proc', 'only conference name changes; manual publisher and proceedings title survive');
+      assert(review.document.querySelectorAll('#detail tbody tr').length === 1, 'saved changes table includes only the checked field');
+      await conferenceSession.undoAll();
+      assert(conference.getField('conferenceName') === 'Manual conference name' && conference.getField('publisher') === 'PM', 'undo restores the selectively updated conference');
+      await conferenceSession.scan({ retry: true }); conferenceSession.selectFields(conference.id, false);
+      fieldCheck('ISSN').click(); fieldCheck('eventPlace').click();
+      await conferenceSession.applySelected();
+      assert(conferenceSession.view().rows[0].status === 'updated', 'additional publisher fields save through Zotero’s actual field registry');
+      assert(conference.getField('ISSN') === '2640-3498' && conference.getField('eventPlace') === 'Vancouver Convention Center, Vancouver, Canada', 'official ISSN and conference location fill the reported blanks');
+      assert(!conference.getField('DOI') && !conference.getField('ISBN') && !conference.getField('place'), 'no DOI, ISBN or publisher location is fabricated');
+      assert(review.document.getElementById('detail').textContent.includes('did not provide a publication DOI'), 'missing DOI is explained separately from lookup status');
+      await conferenceSession.undoAll(); await conferenceSession.scan({ retry: true });
+      conferenceSession.selectFields(conference.id, false); fieldCheck('conferenceName').click();
+      report.selectiveWindow = capture(review);
+      review.document.getElementById('detail').scrollTop = 420;
+      report.selectiveScreenshotError = await screenshot(review);
+      await IOUtils.move(PathUtils.join(output, 'zotero-review.png'), PathUtils.join(output, 'zotero-field-selection.png'));
       review.close();
       await Zotero.Promise.delay(100);
       review = await open([item]);
@@ -133,7 +181,7 @@ async function run() {
     }
   } catch (error) {
     report.passed = false;
-    report.error = String(error.stack || error);
+    report.error = String(error) + '\n' + String(error.stack || '');
     report.window = capture(review);
     report.console = Services.console.getMessageArray().map(message => message.message).slice(-50);
   } finally {

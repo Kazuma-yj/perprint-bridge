@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-09-28",
+  "sources": [
+    "https://proceedings.mlr.press/v267/gu25b.html",
+    "https://proceedings.mlr.press/v267/"
+  ],
+  "paper": "<meta name=\"citation_publisher\" content=\"PMLR\"/>\n<meta name=\"citation_title\" content=\"Auditing Prompt Caching in Language Model APIs\"/>\n<meta name=\"citation_language\" content=\"en\"/>\n<meta name=\"citation_abstract_html_url\" content=\"https://proceedings.mlr.press/v267/gu25b.html\"/>\n<meta name=\"citation_pdf_url\" content=\"https://raw.githubusercontent.com/mlresearch/v267/main/assets/gu25b/gu25b.pdf\">\n<meta name=\"citation_firstpage\" content=\"20477\">\n<meta name=\"citation_lastpage\" content=\"20496\">\n<meta name=\"citation_author\" content=\"Chenchen Gu\">\n<meta name=\"citation_author\" content=\"Xiang Lisa Li\">\n<meta name=\"citation_author\" content=\"Rohith Kuditipudi\">\n<meta name=\"citation_author\" content=\"Percy Liang\">\n<meta name=\"citation_author\" content=\"Tatsunori Hashimoto\">\n<meta name=\"citation_publication_date\" content=\"2025/10/06\">\n<meta name=\"citation_inbook_title\" content=\"International Conference on Machine Learning\"/>\n<meta name=\"citation_conference_title\" content=\"International Conference on Machine Learning\"/>\n<meta name=\"citation_issn\" content=\"2640-3498\">\n<pre>booktitle = \t {Proceedings of the 42nd International Conference on Machine Learning}, series = \t {Proceedings of Machine Learning Research}</pre>",
+  "volume": "<meta name=\"description\" content=\"Proceedings of the 42nd International Conference on Machine Learning Held in Vancouver Convention Center, Vancouver, Canada on 13-19 July 2025 Published as Volume 267 by the Proceedings of Machine Learning Research on 06 October 2025. Volume Edited by: Aarti Singh Maryam Fazel Daniel Hsu Simon Lacoste-Julien Felix Berkenkamp Tegan Maharaj Kiri Wagstaff Jerry Zhu Series Editors: Neil D. Lawrence\" />"
+}

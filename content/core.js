@@ -119,6 +119,7 @@ var PreprintBridgeCore = (() => {
     const booktitle = /\bbooktitle\s*=\s*\{([^{}]+)\}/i.exec(pageText)?.[1];
     const series = /\bseries\s*=\s*\{([^{}]+)\}/i.exec(pageText)?.[1];
     const conference = tag(html, "citation_conference_title")[0];
+    const doi = normalizeDOI(tag(html, "citation_doi")[0] || /\bdoi\s*=\s*\{([^{}]+)\}/i.exec(pageText)?.[1]);
     if (!(booktitle || conference) || !yearFrom(published)) return null;
     return {
       source: "PMLR", itemType: "conferencePaper", title: paperTitle,
@@ -130,6 +131,9 @@ var PreprintBridgeCore = (() => {
       pages: first && last ? first + "-" + last : first || "",
       volume: String(volume), series: series || "", publisher: "PMLR", url,
       catalog: "Proceedings of Machine Learning Research",
+      doi: arxivDOI(doi) ? "" : doi,
+      ISSN: tag(html, "citation_issn")[0] || "", ISBN: tag(html, "citation_isbn")[0] || "",
+      language: tag(html, "citation_language")[0] || "",
       pdfURL: tag(html, "citation_pdf_url")[0] || "", authors
     };
   }
@@ -168,12 +172,20 @@ var PreprintBridgeCore = (() => {
       if (!info.DOI || arxivDOI(info.DOI)) continue;
       const venue = info["container-title"]?.[0];
       const year = String(info.published?.["date-parts"]?.[0]?.[0] || "");
+      const dateParts = info.published?.["date-parts"]?.[0] || [];
       if (!venue || !/^(?:19|20)\d{2}$/.test(year)) continue;
       result.push({
         source: "Crossref", itemType: info.type === "journal-article" ? "journalArticle" : "conferencePaper",
         title: info.title[0], venue, year,
+        date: dateParts.length >= 2 ? dateParts.slice(0, 3).map((part, i) => i ? String(part).padStart(2, "0") : String(part)).join("-") : "",
         pages: String(info.page || ""), volume: String(info.volume || ""),
         publisher: String(info.publisher || ""), doi: info.DOI,
+        issue: String(info.issue || ""), ISSN: info.ISSN?.[0] || "", ISBN: info.ISBN?.[0] || "",
+        language: info.language || "",
+        // Some deposits repeat the proceedings title in event.name. It is
+        // not a better conference name than the existing/DBLP venue label.
+        conferenceName: /^Proceedings\b/i.test(info.event?.name || "") ? "" : info.event?.name || "",
+        eventPlace: info.event?.location || "",
         url: "https://doi.org/" + encodeURIComponent(info.DOI), authors, catalog: "Crossref"
       });
     }
@@ -279,6 +291,7 @@ SELECT DISTINCT ?paper ?title ?kind ?venue ?year ?url ?author ?booktitle ?pages 
           const listing = await request(`https://proceedings.mlr.press/v${volume}/`, { maxBytes: 6_000_000 });
           const entries = pmlrPapers(listing.body);
           if (!entries.length) throw Error("PMLR paper directory could not be read (possible verification page or changed format)");
+          try { cache.set("pmlr-metadata-v" + volume, { time: Date.now(), value: pmlrVolumeMetadata(listing.body, volume) }); } catch (_) {}
           return entries;
         });
         const link = pmlrPaperLink(papers, title, firstAuthor);
@@ -385,6 +398,49 @@ SELECT DISTINCT ?paper ?title ?kind ?venue ?year ?url ?author ?booktitle ?pages 
     return /^10\.\d{4,9}\/\S+$/i.test(doi) ? doi : "";
   }
 
+  function pmlrVolumeMetadata(html, volume) {
+    const description = tag(html, "description")[0] || "";
+    const found = /Published as Volume (\d+)\b/i.exec(description);
+    if (found?.[1] !== String(volume)) throw Error("PMLR volume metadata is missing or refers to a different volume");
+    const eventPlace = /\bHeld in (.+?) on \d{1,2}(?:[-–]\d{1,2})? [A-Za-z]+ \d{4}\b/.exec(description)?.[1] || "";
+    return { eventPlace };
+  }
+  async function completeMetadata(candidate, item, request, checks, { cache = new Map() } = {}) {
+    if (candidate.source === "PMLR") {
+      const volume = /^https:\/\/proceedings\.mlr\.press\/v(\d+)\//.exec(candidate.url)?.[1];
+      if (!volume) return candidate;
+      try {
+        const key = "pmlr-metadata-v" + volume;
+        let entry = cache.get(key);
+        if (!entry || Date.now() - entry.time >= 15 * 60_000) {
+          const page = await request(`https://proceedings.mlr.press/v${volume}/`, { maxBytes: 6_000_000 });
+          entry = { time: Date.now(), value: pmlrVolumeMetadata(page.body, volume) };
+          if (cache.size >= 12) cache.delete(cache.keys().next().value);
+          cache.set(key, entry);
+        }
+        checks.push({ source: "PMLR volume", outcome: "checked" });
+        return { ...candidate, ...entry.value };
+      } catch (error) {
+        checks.push({ source: "PMLR volume", outcome: "error", detail: String(error.message).slice(0, 200) });
+      }
+    } else if (/^DBLP/.test(candidate.source)) {
+      const doi = normalizeDOI(candidate.doi) || normalizeDOI(candidate.url);
+      if (!doi || arxivDOI(doi)) return candidate;
+      // Retain the DOI explicitly supplied by the record even if Crossref is
+      // unavailable. Never transplant a DOI found only by a similar title.
+      candidate = { ...candidate, doi };
+      try {
+        const reply = await request("https://api.crossref.org/works/" + encodeURIComponent(doi));
+        const json = parseJSON(reply.body, reply.contentType, "Crossref DOI");
+        const full = fromCrossref({ message: { items: [json?.message || {}] } }, item.title, item.firstAuthor)
+          .find(record => normalizeDOI(record.doi).toLowerCase() === doi.toLowerCase() && record.itemType === candidate.itemType);
+        checks.push({ source: "Crossref DOI", outcome: full ? "found" : "not_found" });
+        if (full) return { ...candidate, ...Object.fromEntries(Object.entries(full).filter(([, value]) => value !== "")), url: candidate.url };
+      } catch (error) { checks.push({ source: "Crossref DOI", outcome: "error", detail: String(error.message).slice(0, 200) }); }
+    }
+    return candidate;
+  }
+
   // One public workflow for preprints and existing publication records.
   // A known publication DOI constrains fallback results to the same record.
   async function resolvePublication(item, request, options = {}) {
@@ -398,7 +454,8 @@ SELECT DISTINCT ?paper ?title ?kind ?venue ?year ?url ?author ?booktitle ?pages 
         const reply = await request(url);
         const candidate = fromPMLR(reply.body, url, pmlr[1], title, firstAuthor);
         if (!candidate) throw Error("Publication page does not match the title and first author, or is incomplete");
-        return { status: "found", candidates: [candidate], checks: [{ source: "PMLR", outcome: "found" }] };
+        checks.push({ source: "PMLR", outcome: "found" });
+        return { status: "found", candidates: [await completeMetadata(candidate, item, request, checks, options)], checks };
       } catch (error) {
         checks.push({ source: "PMLR", outcome: "error", detail: String(error.message).slice(0, 200) });
       }
@@ -431,10 +488,11 @@ SELECT DISTINCT ?paper ?title ?kind ?venue ?year ?url ?author ?booktitle ?pages 
     if (candidates.length !== result.candidates.length) checks.push({ source: "Record identity", outcome: "error",
       detail: "A candidate referred to a different DOI or would replace a published record with acceptance-only metadata" });
     checks.push(...result.checks);
+    for (let i = 0; i < candidates.length; i++) candidates[i] = await completeMetadata(candidates[i], item, fallbackRequest, checks, options);
     return { candidates, checks, status: candidates.length ?
       (candidates[0].publicationStatus === "accepted" ? "accepted" : "found") :
       checks.some(c => c.outcome === "error") ? "partial_failure" : "not_found" };
   }
 
-  return { arxivID, sameTitle, parseJSON, arxivComment, icmlYear, acceptedProceedings, pmlrVolume, pmlrVolumes, pmlrLink, fromPMLR, fromDBLP, fromCrossref, dblpGraphURL, fromDBLPGraph, discover, normalizeDOI, resolvePublication };
+  return { arxivID, sameTitle, parseJSON, arxivComment, icmlYear, acceptedProceedings, pmlrVolume, pmlrVolumes, pmlrLink, fromPMLR, pmlrVolumeMetadata, fromDBLP, fromCrossref, dblpGraphURL, fromDBLPGraph, discover, normalizeDOI, resolvePublication };
 })();

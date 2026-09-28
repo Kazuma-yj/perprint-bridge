@@ -1,7 +1,7 @@
 {
   "name": "preprint-bridge-zotero",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "A review-first Zotero 10 arXiv publication updater",
   "license": "MIT",
   "scripts": {

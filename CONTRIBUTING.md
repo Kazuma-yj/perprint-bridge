@@ -50,7 +50,7 @@ separate data directory; it never opens the user's profile. Download the
 official Linux Zotero 10.0.3 archive, extract it, and run:
 
 ```sh
-MOZ_HEADLESS=1 python3 scripts/zotero-smoke.py /path/to/Zotero_linux-x86_64/zotero dist/preprint-bridge-1.2.1.xpi zotero-results/current
+MOZ_HEADLESS=1 python3 scripts/zotero-smoke.py /path/to/Zotero_linux-x86_64/zotero dist/preprint-bridge-1.3.0.xpi zotero-results/current
 MOZ_HEADLESS=1 python3 scripts/zotero-smoke.py /path/to/Zotero_linux-x86_64/zotero dist/preprint-bridge-1.2.0.xpi zotero-results/old --expect-blank
 ```
 

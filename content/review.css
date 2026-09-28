@@ -45,6 +45,15 @@ th, td { text-align: start; vertical-align: top; border-bottom: 1px solid var(--
 thead { background: var(--panel); }
 th:first-child { width: 22%; }
 td:last-child { background: color-mix(in srgb, var(--tint) 50%, transparent); }
+.field-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+.field-controls span { flex: 1; }
+.field-controls button { padding: 4px 8px; }
+.field-hint { font-size: 12px; margin: 6px 0 12px; }
+.field-label { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; }
+.field-label input { flex-shrink: 0; margin: 3px 0 0; accent-color: var(--accent); }
+.field-unselected td, .field-unselected th { color: var(--muted); }
+.field-unselected td:last-child { background: transparent; }
+th small { display: block; font-weight: normal; margin-top: 4px; }
 details { margin-top: 18px; font-size: 12px; color: var(--muted); }
 details summary { cursor: pointer; }
 details p { margin-top: 6px; overflow-wrap: anywhere; }

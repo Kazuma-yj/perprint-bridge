@@ -1,0 +1,71 @@
+{
+  "checkedAt": "2026-09-28",
+  "platform": "Official Linux Zotero 10.0.3, MOZ_HEADLESS=1",
+  "metadata": "Recorded Crossref and official ICML 2025 citation fixtures; isolated disposable database",
+  "zoteroVersion": "10.0.3",
+  "expectBlank": false,
+  "checks": [
+    "release XPI is installed and active",
+    "plugin loaded from the actual XPI",
+    "registered chrome document loaded",
+    "review window has the required system principal",
+    "window title is set",
+    "heading has visible layout",
+    "real Zotero item clone produces an update preview",
+    "field differences rendered in Gecko",
+    "selecting a row enables update",
+    "update saved in the real Zotero database",
+    "published fields are correct",
+    "identity, child note and authors are retained",
+    "undo restores the real item",
+    "single-field update succeeds without changing item type",
+    "unchecked type, archive ID and URL stay unchanged",
+    "reported ICML paper produces a real Zotero preview",
+    "each reported field and recovered metadata has its own checkbox",
+    "checking a field selects its paper for update",
+    "selective conference update saved successfully",
+    "only conference name changes; manual publisher and proceedings title survive",
+    "saved changes table includes only the checked field",
+    "undo restores the selectively updated conference",
+    "additional publisher fields save through Zotero’s actual field registry",
+    "official ISSN and conference location fill the reported blanks",
+    "no DOI, ISBN or publisher location is fabricated",
+    "missing DOI is explained separately from lookup status",
+    "review window reopens after closing",
+    "disable unregisters chrome resources",
+    "disable/re-enable registers a working window again"
+  ],
+  "pluginVersion": "1.3.0",
+  "packageURI": "jar:file:///<disposable-test-profile>/extensions/preprint-bridge@research.local.xpi!/",
+  "initialWindow": {
+    "uri": "chrome://preprint-bridge/content/review.xhtml",
+    "title": "Preprint Bridge",
+    "heading": "Review publication information",
+    "rows": 1,
+    "text": "\n\n  \n  Preprint Bridge\n  \n  \n\n\n  \n    PREPRINT BRIDGEReview publication informationReview the differences, then choose papers and fields to update.\n    Continue / retry unfinished\n    Stop queue\n  \n  Review results · Checked 1/1 · Selected 0 · Updated 0Select all publications\n  \n    PAPERS IN THIS SESSIONRandom ForestsPublication found\n    Publication foundRandom ForestsSource: Crossref · 2001-10Machine LearningMatch basis: normalized title and first author agree.https://doi.org/10.1023%2Fa%3A1010933404324CCF (2026): BProposed field changes9/9 fields selectedSelect all fieldsClear fieldsOnly checked fields are saved; unchecked values stay unchanged.Changing item type also selects Zotero’s required field conversions, marked below. Selecting a field specific to the new type also selects the type change.FieldBeforeAfterItem typePreprintJournal articleURLhttps://example.invalid/test-preprinthttps://doi.org/10.1023%2Fa%3A1010933404324ExtraKeep this test noteKeep this test note\nCCF (2026): BArchive IDLinked to item typeKeep this archive ID—Published—2001-10Library catalog—CrossrefVolume—45Pages—5-32Journal—Machine LearningView source checksCrossref DOI: found\n  \n  \n    Updates publication fields on the original item. Authors, PDFs and annotations stay in place.Undo is available until this window closes. Manual edits can be overwritten after reviewing the differences.\n    Undo this window’s updatesUpdate 0 selected\n  \n\n"
+  },
+  "afterLookup": {
+    "uri": "chrome://preprint-bridge/content/review.xhtml",
+    "title": "Preprint Bridge",
+    "heading": "Review publication information",
+    "rows": 1,
+    "text": "\n\n  \n  Preprint Bridge\n  \n  \n\n\n  \n    PREPRINT BRIDGEReview publication informationReview the differences, then choose papers and fields to update.\n    Continue / retry unfinished\n    Stop queue\n  \n  Review results · Checked 1/1 · Selected 0 · Updated 0Select all publications\n  \n    PAPERS IN THIS SESSIONRandom ForestsPublication found\n    Publication foundRandom ForestsSource: Crossref · 2001-10Machine LearningMatch basis: normalized title and first author agree.https://doi.org/10.1023%2Fa%3A1010933404324CCF (2026): BProposed field changes9/9 fields selectedSelect all fieldsClear fieldsOnly checked fields are saved; unchecked values stay unchanged.Changing item type also selects Zotero’s required field conversions, marked below. Selecting a field specific to the new type also selects the type change.FieldBeforeAfterItem typePreprintJournal articleURLhttps://example.invalid/test-preprinthttps://doi.org/10.1023%2Fa%3A1010933404324ExtraKeep this test noteKeep this test note\nCCF (2026): BArchive IDLinked to item typeKeep this archive ID—Published—2001-10Library catalog—CrossrefVolume—45Pages—5-32Journal—Machine LearningView source checksCrossref DOI: found\n  \n  \n    Updates publication fields on the original item. Authors, PDFs and annotations stay in place.Undo is available until this window closes. Manual edits can be overwritten after reviewing the differences.\n    Undo this window’s updatesUpdate 0 selected\n  \n\n"
+  },
+  "selectiveWindow": {
+    "uri": "chrome://preprint-bridge/content/review.xhtml",
+    "title": "Preprint Bridge",
+    "heading": "Review publication information",
+    "rows": 1,
+    "text": "\n\n  \n  Preprint Bridge\n  \n  \n\n\n  \n    PREPRINT BRIDGEReview publication informationReview the differences, then choose papers and fields to update.\n    Continue / retry unfinished\n    Stop queue\n  \n  Review results · Checked 1/1 · Selected 1 · Updated 0Deselect publications\n  \n    PAPERS IN THIS SESSIONAuditing Prompt Caching in Language Model APIsPublication found\n    Publication foundAuditing Prompt Caching in Language Model APIsSource: PMLR · 2025-10-06Proceedings of the 42nd International Conference on Machine LearningMatch basis: normalized title and first author agree.https://proceedings.mlr.press/v267/gu25b.htmlCCF (2026): A (ICML)The checked sources did not provide a publication DOI; this is not a lookup failure. Missing or inapplicable values are not invented.Proposed field changes1/12 fields selectedSelect all fieldsClear fieldsOnly checked fields are saved; unchecked values stay unchanged.FieldBeforeAfterExtraKeep conference noteKeep conference note\nCCF (2026): A (ICML)PublisherPMPMLRProceedings titleProcProceedings of the 42nd International Conference on Machine LearningConferenceManual conference name42nd International Conference on Machine Learning (ICML 2025)Published—2025-10-06Conference location—Vancouver Convention Center, Vancouver, CanadaLanguage—enLibrary catalog—Proceedings of Machine Learning ResearchVolume—267Pages—20477-20496ISSN—2640-3498Series—Proceedings of Machine Learning ResearchView source checksPMLR: foundPMLR volume: read\n  \n  \n    Updates publication fields on the original item. Authors, PDFs and annotations stay in place.Undo is available until this window closes. Manual edits can be overwritten after reviewing the differences.\n    Undo this window’s updatesUpdate 1 selected\n  \n\n"
+  },
+  "selectiveScreenshotError": null,
+  "finalWindow": {
+    "uri": "chrome://preprint-bridge/content/review.xhtml",
+    "title": "Preprint Bridge",
+    "heading": "Review publication information",
+    "rows": 1,
+    "text": "\n\n  \n  Preprint Bridge\n  \n  \n\n\n  \n    PREPRINT BRIDGEReview publication informationReview the differences, then choose papers and fields to update.\n    Continue / retry unfinished\n    Stop queue\n  \n  Review results · Checked 1/1 · Selected 0 · Updated 0Select all publications\n  \n    PAPERS IN THIS SESSIONRandom ForestsPublication found\n    Publication foundRandom ForestsSource: Crossref · 2001-10Machine LearningMatch basis: normalized title and first author agree.https://doi.org/10.1023%2Fa%3A1010933404324CCF (2026): BProposed field changes9/9 fields selectedSelect all fieldsClear fieldsOnly checked fields are saved; unchecked values stay unchanged.Changing item type also selects Zotero’s required field conversions, marked below. Selecting a field specific to the new type also selects the type change.FieldBeforeAfterItem typePreprintJournal articleURLhttps://example.invalid/test-preprinthttps://doi.org/10.1023%2Fa%3A1010933404324ExtraKeep this test noteKeep this test note\nCCF (2026): BArchive IDLinked to item typeKeep this archive ID—Published—2001-10Library catalog—CrossrefVolume—45Pages—5-32Journal—Machine LearningView source checksCrossref DOI: found\n  \n  \n    Updates publication fields on the original item. Authors, PDFs and annotations stay in place.Undo is available until this window closes. Manual edits can be overwritten after reviewing the differences.\n    Undo this window’s updatesUpdate 0 selected\n  \n\n"
+  },
+  "screenshotError": null,
+  "passed": true
+}
