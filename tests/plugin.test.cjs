@@ -98,7 +98,7 @@ test('existing PMLR record refreshes edition and CCF rank without replacing item
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'content', file), 'utf8'), sandbox);
   }
   const plugin = vm.runInContext('PreprintBridge', sandbox);
-  await plugin.refreshPMLR(item);
+  await plugin.checkItem(item);
   assert.equal(item.saved, true);
   assert.equal(item.itemType, 'conferencePaper');
   assert.deepEqual(item.pdfs, [99]);
@@ -180,7 +180,7 @@ test('disabling the plugin during a search prevents late prompts or item writes'
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'content', file), 'utf8'), sandbox);
   }
   const plugin = sandbox.PreprintBridge;
-  const item = { id: 71, getDisplayTitle: () => 'Some Paper', getCreators: () => [{ lastName: 'Smith' }],
+  const item = { id: 71, itemType: 'preprint', isRegularItem: () => true, getDisplayTitle: () => 'Some Paper', getCreators: () => [{ lastName: 'Smith' }],
     getField: name => name === 'url' ? 'https://arxiv.org/abs/2403.06634' : '',
     setField() { writes++; }, async saveTx() { writes++; } };
   const pending = plugin.checkItem(item);
@@ -197,7 +197,7 @@ test('disabling the plugin during a search prevents late prompts or item writes'
 
 function harness(fields, overrides = {}) {
   const item = {
-    id: 1, itemType: 'conferencePaper', isEditable: () => true,
+    id: 1, itemType: 'conferencePaper', isEditable: () => true, isRegularItem: () => true,
     getDisplayTitle: () => fields.title, getCreators: () => [{ lastName: 'Gu' }],
     getField: name => fields[name] || '', setField: (name, value) => { fields[name] = value; },
     setType(type) { this.itemType = type; },

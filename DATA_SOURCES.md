@@ -10,7 +10,9 @@ The bundled data is derived from **中国计算机学会推荐国际学术会议
 - Regeneration: `python scripts/extract_ccf.py path/to/directory.pdf` (requires `pdfplumber`).
 - The PDF itself is not redistributed. Each extracted record retains its category and source page.
 
-The extractor retains rows with a usable abbreviation and title. This is a **partial matching dataset**, not a claim that every directory entry is supported. Entries without a distinct usable abbreviation are omitted. Ambiguous abbreviation matches are not assigned a rank automatically.
+The extractor retains rows with a usable abbreviation and title. Since 1.1.0 it also retains journals whose abbreviation cell is blank, matching them by full journal title without inventing an abbreviation. This is a **partial matching dataset**, not a claim that every directory entry is supported. Malformed rows and conferences without a usable abbreviation are omitted. Ambiguous matches are not assigned a rank automatically.
+
+Version 1.1.0 contains 657 extracted rows, including 46 journals with blank abbreviation cells. For example, Machine Learning is listed in the B-class artificial-intelligence journal table on page 53. Full-title matching preserves the directory's blank abbreviation rather than assigning a made-up one.
 
 Version 1.0.0 assigns PDF glyphs to table cells by their centers to avoid mixing adjacent rows. Names such as ACNS, SACMAT, ASPLOS and CHI were checked against the source layout; the previous crop-based extraction could corrupt their names. CCF ranks are those of the **2026 edition**, including when reviewing older papers. They are reference information, not an assessment of an individual paper. CCF's current official directory takes precedence.
 
@@ -27,4 +29,4 @@ This project is independent of CCF and Zotero. The MIT license covers the plugin
 
 CCF lookups are local. Publication checks contact the services above only when initiated by the user. See the README for the information sent and the matching limits.
 
-The small test fixtures contain bibliographic metadata only. PMLR fixture URLs are recorded in `tests/fixtures/icml-2024.json`; the DBLP fixtures were captured from its official SPARQL API on 2026-09-28. DBLP publishes its bibliographic metadata under CC0.
+The small test fixtures contain bibliographic metadata only. PMLR fixture URLs are recorded in `tests/fixtures/icml-2024.json`; the DBLP fixtures were captured from its official SPARQL API on 2026-09-28. DBLP publishes its bibliographic metadata under CC0. `tests/fixtures/crossref-publications.json` records three official Crossref DOI endpoint responses captured on 2026-09-28, reduced to citation fields; no abstracts or full texts are included.

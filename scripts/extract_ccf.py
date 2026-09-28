@@ -82,9 +82,10 @@ def main(pdf_path):
                             continue
                         acronym = " ".join(cells[1].split())
                         title = " ".join(cells[2].split())
-                        # Skip broken cells and entries without a distinct acronym;
-                        # abstain rather than assigning an unreliable ranking.
-                        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9+./&-]{1,19}", acronym):
+                        # Journals often have no official abbreviation in the
+                        # directory. Keep those rows for exact full-title lookup.
+                        # Nonempty malformed abbreviations still need review.
+                        if not (kind == "journal" and not acronym) and not re.fullmatch(r"[A-Za-z][A-Za-z0-9+./&-]{1,19}", acronym):
                             continue
                         if len(title) < 6 or not re.search(r"[A-Za-z]{4}", title):
                             continue

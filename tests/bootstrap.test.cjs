@@ -48,19 +48,17 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
   }
   await vm.runInContext('startup({ rootURI: "file:///plugin/" })', sandbox);
   assert.deepEqual([...menus.keys()], [
-    'preprint-bridge@research.local-preprint-bridge-check',
-    'preprint-bridge@research.local-preprint-bridge-copy',
-    'preprint-bridge@research.local-preprint-bridge-refresh'
+    'preprint-bridge@research.local-preprint-bridge-main'
   ]);
   // Restarting within the same process must replace our menus without leaving
   // false registration IDs behind.
   await vm.runInContext('startup({ rootURI: "file:///plugin/" })', sandbox);
-  assert.equal(menus.size, 3);
+  assert.equal(menus.size, 1);
   vm.runInContext('shutdown({}, 0)', sandbox);
   assert.equal(menus.size, 0);
-  menus.set('preprint-bridge@research.local-preprint-bridge-check', {});
+  menus.set('preprint-bridge@research.local-preprint-bridge-main', {});
   await vm.runInContext('startup({ rootURI: "file:///plugin/" })', sandbox);
-  assert.equal(menus.size, 3);
+  assert.equal(menus.size, 1);
   vm.runInContext('shutdown({}, 0)', sandbox);
   assert.equal(menus.size, 0);
   assert.equal(removedFTL, true);

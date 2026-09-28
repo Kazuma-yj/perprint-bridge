@@ -46,12 +46,13 @@ async function request(url, { maxBytes = 1_000_000 } = {}) {
 }
 (async () => {
   const report = [];
-  for (const paper of cases.filter(c => !selected.length || selected.includes(c.arxivId))) {
-    const result = await sandbox.PreprintBridgeCore.discover(paper, request, { cache: parsedCache });
+  for (const paper of cases.filter(c => !selected.length || selected.includes(c.arxivId || c.doi))) {
+    const result = await sandbox.PreprintBridgeCore.resolvePublication(paper, request, { cache: parsedCache });
     const candidates = result.candidates.map(c => ({ ...c, ccf: sandbox.PreprintBridgeCCF.lookup(c) }));
     for (const candidate of candidates) {
-      const fields = { title: paper.title, url: `https://arxiv.org/abs/${paper.arxivId}`, extra: '' };
-      const item = { itemType: 'preprint', getDisplayTitle: () => fields.title,
+      const fields = { title: paper.title, url: paper.url || (paper.arxivId ? `https://arxiv.org/abs/${paper.arxivId}` : ''),
+        DOI: paper.doi || '', conferenceName: paper.conferenceName || '', extra: '' };
+      const item = { itemType: paper.itemType || 'preprint', getDisplayTitle: () => fields.title,
         getField: name => fields[name] || '', setField(name, value) { fields[name] = value; },
         setType(type) { this.itemType = type; }, toJSON: () => ({ ...fields }),
         fromJSON(snapshot) { Object.assign(fields, snapshot); }, async saveTx() {} };
@@ -59,13 +60,12 @@ async function request(url, { maxBytes = 1_000_000 } = {}) {
       candidate.appliedFields = fields;
     }
     const match = candidates.some(c => c.url === paper.expectedURL && c.year === paper.expectedYear &&
-      (!paper.expectedCCF || (c.ccf?.grade === paper.expectedCCF &&
-        c.appliedFields.extra.includes(`CCF (2026): ${paper.expectedCCF} (`) &&
-        c.appliedFields.conferenceName.endsWith(` ${paper.expectedYear})`))));
+      (!paper.expectedCCF || (new RegExp(`^CCF \\(2026\\): ${paper.expectedCCF}(?: \\(|$)`, 'm').test(c.appliedFields.extra) &&
+        (c.itemType !== 'conferencePaper' || c.appliedFields.conferenceName.endsWith(` ${paper.expectedYear})`)))));
     const passed = paper.expectedURL ? match : !candidates.length;
-    report.push({ arxivId: paper.arxivId, title: paper.title, passed, status: result.status,
+    report.push({ arxivId: paper.arxivId, doi: paper.doi, title: paper.title, passed, status: result.status,
       candidates, checks: result.checks });
-    process.stderr.write(`${passed ? 'PASS' : 'FAIL'} ${paper.arxivId}: ${result.status}\n`);
+    process.stderr.write(`${passed ? 'PASS' : 'FAIL'} ${paper.arxivId || paper.doi}: ${result.status}\n`);
   }
   console.log(JSON.stringify({ checkedAt: new Date().toISOString(),
     pluginVersion: JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8')).version,

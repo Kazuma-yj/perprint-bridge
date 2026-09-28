@@ -49,3 +49,13 @@ test('CCF cell extraction keeps neighboring table rows out of conference names',
   }
   assert.ok(ccf.lookup({ itemType: 'conferencePaper', venue: 'HotStorage' }));
 });
+
+test('journals without abbreviations match by full title from the CCF directory', () => {
+  for (const title of ['Machine Learning', 'Neural Networks', 'Computational Linguistics']) {
+    const entry = ccf.lookup({ itemType: 'journalArticle', venue: title });
+    assert.equal(entry.grade, 'B', title);
+    assert.equal(entry.acronym, '', 'do not invent an abbreviation');
+  }
+  assert.equal(ccf.lookup({ itemType: 'journalArticle', venue: 'Learning' }), null);
+  assert.equal(ccf.lookup({ itemType: 'conferencePaper', venue: 'Machine Learning' }), null);
+});

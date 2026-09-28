@@ -32,25 +32,18 @@ var PreprintBridge = (() => {
   const arxivOf = (item) => PreprintBridgeCore.arxivID(
     [item.getField("url"), item.getField("DOI"), item.getField("extra")].join(" ")
   );
-  const isPreprint = (item) => item?.isRegularItem() && !!arxivOf(item) && (
-    item.itemType === "preprint" ||
-    (item.itemType === "conferencePaper" && /(?:^|\n)(?:出版状态：已录用，待正式出版|Publication status: Accepted; proceedings pending)(?:\n|$)/.test(item.getField("extra")))
-  );
-  const published = (item) => item?.isRegularItem() &&
-    ["conferencePaper", "journalArticle"].includes(item.itemType) && !PreprintBridgeCore.arxivID(item.getField("url"));
-  const pmlrVolumeOf = item => {
-    if (!item?.isRegularItem() || item.itemType !== "conferencePaper") return null;
-    try {
-      const url = new URL(item.getField("url"));
-      if (url.hostname !== "proceedings.mlr.press" || url.protocol !== "https:") return null;
-      return /^\/v(\d+)\/[a-z\d-]+\.html$/i.exec(url.pathname)?.[1] || null;
-    } catch { return null; }
-  };
+  const regular = item => !!item?.isRegularItem?.();
+  const paper = item => regular(item) && ["preprint", "conferencePaper", "journalArticle"].includes(item.itemType);
+  const pendingPublication = item => item.itemType === "conferencePaper" &&
+    /(?:^|\n)(?:出版状态：已录用，待正式出版|Publication status: Accepted; proceedings pending)(?:\n|$)/.test(item.getField("extra"));
+  const isPreprint = item => paper(item) && (item.itemType === "preprint" || pendingPublication(item));
+  const published = item => paper(item) && !isPreprint(item) && !PreprintBridgeCore.arxivID(item.getField("url"));
+  const ccfEligible = item => regular(item) && ["conferencePaper", "journalArticle"].includes(item.itemType);
   const withRating = candidate => {
     const ccf = PreprintBridgeCCF.lookup(candidate);
     let conferenceName = candidate.conferenceName;
     const year = /\b(?:19|20)\d{2}\b/.exec(String(candidate.year || ""))?.[0];
-    if (candidate.itemType === "conferencePaper" && ccf && year) {
+    if (candidate.itemType === "conferencePaper" && ccf?.acronym && year) {
       const fullName = String(!conferenceName || /^[A-Z0-9+./&-]{2,20}(?:\s+\(\d+\))?$/i.test(conferenceName) ? ccf.title : conferenceName)
         .replace(/\s*[（(]\s*[A-Z][A-Z0-9+./&-]{1,19}(?:\s*(?:19|20)?\d{2})?\s*[）)]\s*$/i, "");
       const abbreviation = ccf.acronym === "SIGKDD" ? "KDD" : ccf.acronym;
@@ -60,6 +53,8 @@ var PreprintBridge = (() => {
   };
   const ccfText = (entry) => entry ? `CCF ${entry.grade}（2026 · ${entry.area}）` :
     message("CCF：未找到可靠匹配", "CCF: no reliable match");
+  const ratingLabel = entry => `CCF (2026): ${entry.grade}` + (entry.acronym ?
+    ` (${entry.acronym === "SIGKDD" ? "KDD" : entry.acronym})` : "");
 
   function conciseExtra(value, arxivId, candidate) {
     // Remove only fields written by this plugin in earlier releases. Preserve
@@ -72,7 +67,7 @@ var PreprintBridge = (() => {
     const retained = lines.join("\n").trim();
     const added = [
       arxivId && `arXiv: ${arxivId}`,
-      candidate.ccf && `CCF (2026): ${candidate.ccf.grade} (${candidate.ccf.acronym === "SIGKDD" ? "KDD" : candidate.ccf.acronym})`,
+      candidate.ccf && ratingLabel(candidate.ccf),
       candidate.publicationStatus === "accepted" && message("出版状态：已录用，待正式出版", "Publication status: Accepted; proceedings pending")
     ].filter(Boolean).join("\n");
     return [retained, added].filter(Boolean).join("\n");
@@ -114,6 +109,14 @@ var PreprintBridge = (() => {
 
   async function apply(item, candidate, arxivId, { allowTitleChange = false } = {}) {
     if (!editable(item)) throw Error(message("此条目不可编辑，请检查馆藏权限或条目是否已删除。", "This item is not editable. Check library permissions or whether it was deleted."));
+    const oldURL = item.getField("url");
+    const oldDOI = item.getField("DOI");
+    const sameDOI = !!PreprintBridgeCore.normalizeDOI(oldDOI) &&
+      PreprintBridgeCore.normalizeDOI(oldDOI).toLowerCase() === PreprintBridgeCore.normalizeDOI(candidate.doi).toLowerCase();
+    if (item.itemType === "conferencePaper" && candidate.itemType === "conferencePaper" &&
+      !candidate.conferenceName && (sameDOI || (!!oldURL && oldURL === candidate.url))) {
+      candidate = { ...candidate, conferenceName: item.getField("conferenceName") };
+    }
     candidate = withRating(candidate);
     if (!allowTitleChange && !PreprintBridgeCore.sameTitle(item.getDisplayTitle(), candidate.title)) {
       throw Error(message("标题与预印本不一致，已停止写入。", "Title mismatch; no changes were made."));
@@ -122,11 +125,9 @@ var PreprintBridge = (() => {
       throw Error(message("正式版本信息缺少刊名、年份或类型。", "Publication metadata is incomplete."));
     }
     const original = item.toJSON();
-    const oldURL = item.getField("url");
     const changedURL = !!oldURL && oldURL !== candidate.url;
-    const oldDOI = item.getField("DOI");
     const oldDate = item.getField("date");
-    const keepDetailedDate = item.itemType === candidate.itemType && oldURL === candidate.url &&
+    const keepDetailedDate = item.itemType === candidate.itemType && (oldURL === candidate.url || sameDOI) &&
       !candidate.date && /\b(?:19|20)\d{2}\b/.exec(oldDate)?.[0] === String(candidate.year);
     try {
       if (item.itemType !== candidate.itemType) item.setType(Zotero.ItemTypes.getID(candidate.itemType));
@@ -183,9 +184,10 @@ var PreprintBridge = (() => {
   }
 
   async function checkItem(item) {
+    if (!paper(item)) return alert(message("请选择一个预印本、会议论文或期刊文章主条目。", "Select one preprint, conference paper or journal article parent item."));
     const id = arxivOf(item);
-    if (!id) return alert(message("请选择带 arXiv 标识的预印本主条目。", "Select an arXiv preprint parent item."));
     if (!editable(item)) return alert(message("此馆藏中的条目不可编辑。", "This library item is read-only."));
+    if (!item.getDisplayTitle().trim()) return alert(message("条目缺少题名，请先补全。", "Add a title before checking this item."));
     const firstAuthor = item.getCreators()[0]?.lastName || "";
     if (!firstAuthor.trim()) return alert(message("条目缺少第一作者。请先补全作者，或使用手动复制正式版本信息。", "The first author is missing. Add the author or copy metadata from a published Zotero item."));
     if (busy.has(item.id)) return alert(message("此条目正在检索，请稍候。", "This item is already being checked."));
@@ -193,8 +195,9 @@ var PreprintBridge = (() => {
     busy.add(item.id);
     const progress = showProgress();
     try {
-      const result = await PreprintBridgeCore.discover({
-        title: item.getDisplayTitle(), firstAuthor, arxivId: id
+      const result = await PreprintBridgeCore.resolvePublication({
+        title: item.getDisplayTitle(), firstAuthor, arxivId: id,
+        doi: item.getField("DOI"), url: item.getField("url"), published: published(item)
       }, async (url, options) => {
         if (started !== generation) throw Error("Search cancelled: plugin disabled");
         const reply = await request(url, options);
@@ -224,7 +227,9 @@ var PreprintBridge = (() => {
       // A failed secondary source is useful in the debug log. Once an
       // official record is found, keep the review focused on that record.
       if (!confirm(candidate, candidate.publicationStatus === "accepted" ? describe(result) : "")) return;
+      if (started !== generation) return;
       await apply(item, candidate, id);
+      if (started !== generation) return;
       alert(candidate.publicationStatus === "accepted" ?
         message("已记录会议录用信息；正式出版信息尚待核对。", "Acceptance recorded; publisher metadata is still pending.") :
         message("已更新原条目的出版信息；请核对作者与 PDF。", "Publication fields updated. Please review creators and the PDF."));
@@ -232,56 +237,105 @@ var PreprintBridge = (() => {
       if (started !== generation) return;
       log("Update failed: " + (error?.stack || error));
       alert(message("更新失败：", "Update failed: ") + String(error?.message || error));
-    } finally { closeProgress(progress); busy.delete(item.id); }
+    } finally { closeProgress(progress); if (started === generation) busy.delete(item.id); }
   }
 
-  async function copySelected() {
-    const items = selected();
+  async function copySelected(items = selected()) {
     const preprint = items.find(isPreprint);
     const source = items.find(item => item !== preprint && published(item));
     if (!preprint || !source || items.length !== 2) return;
     if (busy.has(preprint.id)) return alert(message("此条目正在检索，请稍候。", "This item is already being checked."));
     if (!editable(preprint)) return alert(message("此馆藏中的条目不可编辑。", "This library item is read-only."));
+    const started = generation;
     const candidate = withRating(candidateFromItem(source));
     if (!PreprintBridgeCore.sameTitle(preprint.getDisplayTitle(), candidate.title) &&
       !Services.prompt.confirm(win(), title,
         message("两个标题不同。请先核对作者和正文，确认这是同一篇论文后继续：\n", "Titles differ. Confirm the authors and paper before continuing:\n") +
         preprint.getDisplayTitle() + "\n→ " + candidate.title)) return;
     if (!confirm(candidate, message("正式版本条目会保留，确认信息后可自行删除重复条目。", "The source item will remain; delete the duplicate after review if desired."))) return;
+    if (started !== generation) return;
     try {
       busy.add(preprint.id);
       await apply(preprint, candidate, arxivOf(preprint), { allowTitleChange: true });
-      alert(message("信息已复制到原预印本条目，来源条目没有删除。", "Metadata copied to the original item; the source was not deleted."));
+      if (started === generation) alert(message("信息已复制到原预印本条目，来源条目没有删除。", "Metadata copied to the original item; the source was not deleted."));
     } catch (error) {
       log("Copy failed: " + (error?.stack || error));
-      alert(message("复制失败：", "Copy failed: ") + String(error?.message || error));
-    } finally { busy.delete(preprint.id); }
+      if (started === generation) alert(message("复制失败：", "Copy failed: ") + String(error?.message || error));
+    } finally { if (started === generation) busy.delete(preprint.id); }
   }
 
-  async function refreshPMLR(item) {
-    const volume = pmlrVolumeOf(item);
-    if (!volume || busy.has(item.id)) return;
-    if (!editable(item)) return alert(message("此馆藏中的条目不可编辑。", "This library item is read-only."));
+  async function updateCCF(items = selected()) {
+    // CCF-only updates must not touch bibliographic fields or acceptance state.
+    const stats = { updated: 0, unchanged: 0, unmatched: 0, skipped: 0, failed: 0 };
     const started = generation;
-    busy.add(item.id);
-    const progress = showProgress();
-    try {
-      const url = item.getField("url");
-      const reply = await request(url);
-      closeProgress(progress);
-      if (started !== generation) return;
-      const candidate = PreprintBridgeCore.fromPMLR(reply.body, url, volume,
-        item.getDisplayTitle(), item.getCreators()[0]?.lastName || "");
-      if (!candidate) throw Error(message("PMLR 页面与当前题名或作者不匹配。", "PMLR title or author does not match this item."));
-      const rated = withRating(candidate);
-      if (!confirm(rated, message("核对已发表条目并补全正式出版信息。", "Review and complete the published record."))) return;
-      await apply(item, rated, arxivOf(item));
-      alert(message("已更新出版信息与 CCF 评级；请核对 PDF 附件。", "Publication metadata and CCF rating updated. Review the PDF attachment."));
-    } catch (error) {
-      if (started !== generation) return;
-      log("Refresh failed: " + (error?.stack || error));
-      alert(message("核对失败：", "Review failed: ") + String(error?.message || error));
-    } finally { closeProgress(progress); busy.delete(item.id); }
+    const changes = [], seen = new Set();
+    for (const item of items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      if (!ccfEligible(item) || !editable(item) || busy.has(item.id)) { stats.skipped++; continue; }
+      const rating = PreprintBridgeCCF.lookup(candidateFromItem(item));
+      if (!rating) { stats.unmatched++; continue; }
+      const before = item.getField("extra");
+      const label = ratingLabel(rating);
+      const retained = String(before || "").split(/\r?\n/)
+        .filter(line => !/^(?:CCF Rating \(2026\):|CCF \(2026\):)/i.test(line)).join("\n").trim();
+      const after = [retained, label].filter(Boolean).join("\n");
+      if (after === before) { stats.unchanged++; continue; }
+      changes.push({ item, before, after, label });
+    }
+    const summary = () => message(
+      `已更新 ${stats.updated} 项；无需修改 ${stats.unchanged} 项；无可靠匹配 ${stats.unmatched} 项；跳过 ${stats.skipped} 项；失败 ${stats.failed} 项。`,
+      `Updated: ${stats.updated}; unchanged: ${stats.unchanged}; no reliable match: ${stats.unmatched}; skipped: ${stats.skipped}; failed: ${stats.failed}.`
+    );
+    if (!changes.length) { alert(summary()); return stats; }
+    const preview = changes.slice(0, 12).map(change => `${change.item.getDisplayTitle()}\n${change.label}`).join("\n\n");
+    if (!Services.prompt.confirm(win(), title, message(
+      `将更新 ${changes.length} 个条目在“其他”字段中的 CCF 2026 评级。无可靠匹配的条目保留原值。\n\n`,
+      `Update the CCF 2026 label in Extra for ${changes.length} items. Unmatched items keep their existing values.\n\n`
+    ) + preview + (changes.length > 12 ? message(`\n\n另有 ${changes.length - 12} 项。`, `\n\nAnd ${changes.length - 12} more.`) : ""))) return { ...stats, cancelled: true };
+    for (const change of changes) {
+      if (started !== generation) return { ...stats, cancelled: true };
+      const { item, before, after } = change;
+      if (!editable(item) || busy.has(item.id) || item.getField("extra") !== before) { stats.skipped++; continue; }
+      busy.add(item.id);
+      try {
+        item.setField("extra", after);
+        await item.saveTx();
+        stats.updated++;
+      } catch (error) {
+        item.setField("extra", before);
+        stats.failed++;
+        log("CCF update failed: " + (error?.stack || error));
+      } finally { if (started === generation) busy.delete(item.id); }
+    }
+    if (started === generation) alert(summary());
+    return stats;
+  }
+
+  function openArxiv(items = selected()) {
+    const id = items.length === 1 && regular(items[0]) && arxivOf(items[0]);
+    if (!id) return alert(message("请选择一个带 arXiv 标识的主条目。", "Select one parent item containing an arXiv identifier."));
+    Zotero.launchURL("https://arxiv.org/abs/" + id);
+  }
+
+  function showHelp() {
+    alert(message(
+      "核对并更新出版信息：选中一个预印本、会议论文或期刊文章，核对后更新。\n\n更新 CCF 评级：选中一个或多个会议／期刊条目，按已有刊名或会议名本地匹配。\n\n复制正式版本信息到预印本：同时选中一个预印本和一个正式版本条目。\n\n打开 arXiv 原文：选中一个含 arXiv 标识的条目，更新后也可回到预印本页面。\n\n请选中文献主条目。灰色命令表示当前选择不满足条件，或条目不可编辑／正在处理。",
+      "Review and update publication: select one preprint, conference paper or journal article, then review before updating.\n\nUpdate CCF rating: select one or more conference/journal items to match their existing venue names locally.\n\nCopy published metadata to preprint: select one preprint and one published record together.\n\nOpen arXiv preprint: select one item containing an arXiv identifier, even after its publication fields have been updated.\n\nSelect bibliographic parent items. A disabled command means the selection is unsuitable, read-only or already being processed."
+    ));
+  }
+
+  function menuState(command, items = []) {
+    const one = items.length === 1 ? items[0] : null;
+    if (command === "review") return !!one && paper(one) && editable(one) && !busy.has(one.id);
+    if (command === "ccf") return items.some(item => ccfEligible(item) && editable(item) && !busy.has(item.id));
+    if (command === "copy") {
+      const preprint = items.find(isPreprint);
+      return items.length === 2 && !!preprint && editable(preprint) && !busy.has(preprint.id) &&
+        items.some(item => item !== preprint && published(item));
+    }
+    if (command === "arxiv") return !!one && regular(one) && !!arxivOf(one);
+    return true;
   }
 
   function start() {
@@ -300,33 +354,39 @@ var PreprintBridge = (() => {
       }
       menus.push(registeredID);
     }
+    function action(command, callback) {
+      return { menuType: "menuitem", l10nID: "preprint-bridge-" + command,
+        onShowing: (_event, context) => {
+          context.setVisible(true);
+          context.setEnabled(menuState(command, context.items || []));
+        },
+        onCommand: (_event, context) => {
+          const items = context?.items || selected();
+          if (menuState(command, items)) void callback(items);
+        }
+      };
+    }
     register({
-      menuID: "preprint-bridge-check", pluginID, target: "main/library/item",
-      menus: [{ menuType: "menuitem", l10nID: "preprint-bridge-check",
-        onShowing: (_event, context) => context.setVisible(context.items?.length === 1 && isPreprint(context.items[0])),
-        onCommand: () => { const item = selected()[0]; if (item) void checkItem(item); }
-      }]
-    });
-    register({
-      menuID: "preprint-bridge-copy", pluginID, target: "main/library/item",
-      menus: [{ menuType: "menuitem", l10nID: "preprint-bridge-copy",
-        onShowing: (_event, context) => context.setVisible(context.items?.length === 2 && context.items.some(isPreprint) && context.items.some(published)),
-        onCommand: () => { void copySelected(); }
-      }]
-    });
-    register({
-      menuID: "preprint-bridge-refresh", pluginID, target: "main/library/item",
-      menus: [{ menuType: "menuitem", l10nID: "preprint-bridge-refresh",
-        onShowing: (_event, context) => context.setVisible(context.items?.length === 1 && !!pmlrVolumeOf(context.items[0])),
-        onCommand: () => { const item = selected()[0]; if (item) void refreshPMLR(item); }
+      menuID: "preprint-bridge-main", pluginID, target: "main/library/item",
+      menus: [{ menuType: "submenu", l10nID: "preprint-bridge-menu",
+        onShowing: (_event, context) => context.setVisible(!!context.items?.some(regular)),
+        menus: [
+          action("review", items => checkItem(items[0])),
+          action("ccf", items => updateCCF(items)),
+          action("copy", items => copySelected(items)),
+          action("arxiv", items => openArxiv(items)),
+          { menuType: "separator" },
+          action("help", () => showHelp())
+        ]
       }]
     });
   }
   function stop() {
     ++generation;
+    busy.clear();
     discoveryCache.clear();
     for (const progress of [...progressWindows]) closeProgress(progress);
     for (const id of menus.splice(0)) Zotero.MenuManager.unregisterMenu(id);
   }
-  return { start, stop, checkItem, refreshPMLR, apply };
+  return { start, stop, checkItem, apply, updateCCF, openArxiv, menuState };
 })();

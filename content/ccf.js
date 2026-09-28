@@ -18,7 +18,7 @@ var PreprintBridgeCCF = (() => {
     // Prefer a full official name over an ambiguous abbreviation (e.g. FSE).
     for (const name of names) {
       const normalized = key(name);
-      if (normalized.length < 10) continue;
+      if (normalized.length < 6) continue;
       const matches = pool.filter(entry => key(entry.title) === normalized);
       if (matches.length === 1) return matches[0];
     }

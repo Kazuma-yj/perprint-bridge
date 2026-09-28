@@ -376,5 +376,65 @@ SELECT DISTINCT ?paper ?title ?kind ?venue ?year ?url ?author ?booktitle ?pages 
     }
     return { status: candidates.length ? "found" : checks.some(c => c.outcome === "error") ? "partial_failure" : "not_found", candidates, checks };
   }
-  return { arxivID, sameTitle, parseJSON, arxivComment, icmlYear, acceptedProceedings, pmlrVolume, pmlrVolumes, pmlrLink, fromPMLR, fromDBLP, fromCrossref, dblpGraphURL, fromDBLPGraph, discover };
+  function normalizeDOI(value) {
+    let doi = String(value || "").trim().replace(/^doi:\s*/i, "");
+    if (/^https?:\/\/(?:dx\.)?doi\.org\//i.test(doi)) {
+      try { doi = decodeURIComponent(doi.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "")); }
+      catch { return ""; }
+    }
+    return /^10\.\d{4,9}\/\S+$/i.test(doi) ? doi : "";
+  }
+
+  // One public workflow for preprints and existing publication records.
+  // A known publication DOI constrains fallback results to the same record.
+  async function resolvePublication(item, request, options = {}) {
+    const { title, firstAuthor, arxivId, url, published: isPublished } = item;
+    const checks = [];
+    const rawDOI = normalizeDOI(item.doi) || normalizeDOI(url);
+    const doi = arxivDOI(rawDOI) ? "" : rawDOI;
+    const pmlr = /^https:\/\/proceedings\.mlr\.press\/v(\d+)\/[^/?#]+\.html$/.exec(url || "");
+    if (pmlr) {
+      try {
+        const reply = await request(url);
+        const candidate = fromPMLR(reply.body, url, pmlr[1], title, firstAuthor);
+        if (!candidate) throw Error("Publication page does not match the title and first author, or is incomplete");
+        return { status: "found", candidates: [candidate], checks: [{ source: "PMLR", outcome: "found" }] };
+      } catch (error) {
+        checks.push({ source: "PMLR", outcome: "error", detail: String(error.message).slice(0, 200) });
+      }
+    }
+    if (doi) {
+      try {
+        const reply = await request("https://api.crossref.org/works/" + encodeURIComponent(doi));
+        const json = parseJSON(reply.body, reply.contentType, "Crossref DOI");
+        const candidates = fromCrossref({ message: { items: [json?.message || {}] } }, title, firstAuthor)
+          .filter(candidate => normalizeDOI(candidate.doi).toLowerCase() === doi.toLowerCase());
+        if (candidates.length) return { status: "found", candidates, checks: [...checks, { source: "Crossref DOI", outcome: "found" }] };
+        checks.push({ source: "Crossref DOI", outcome: "not_found" });
+      } catch (error) {
+        checks.push({ source: "Crossref DOI", outcome: "error", detail: String(error.message).slice(0, 200) });
+      }
+    }
+    let fallbackRequest = request;
+    if (checks.some(c => c.source === "Crossref DOI" && /\b429\b/.test(c.detail || ""))) {
+      fallbackRequest = (target, settings) => target.startsWith("https://api.crossref.org/") ?
+        Promise.reject(Error("HTTP 429: skipping further Crossref requests in this check")) : request(target, settings);
+    }
+    const result = await discover({ title, firstAuthor, arxivId }, fallbackRequest, options);
+    const candidates = result.candidates.filter(candidate => {
+      if (isPublished && candidate.publicationStatus === "accepted") return false;
+      if (!doi) return true;
+      const candidateDOI = normalizeDOI(candidate.doi);
+      return candidateDOI ? candidateDOI.toLowerCase() === doi.toLowerCase() :
+        candidate.publicationStatus !== "accepted" && !!url && candidate.url === url;
+    });
+    if (candidates.length !== result.candidates.length) checks.push({ source: "Record identity", outcome: "error",
+      detail: "A candidate referred to a different DOI or would replace a published record with acceptance-only metadata" });
+    checks.push(...result.checks);
+    return { candidates, checks, status: candidates.length ?
+      (candidates[0].publicationStatus === "accepted" ? "accepted" : "found") :
+      checks.some(c => c.outcome === "error") ? "partial_failure" : "not_found" };
+  }
+
+  return { arxivID, sameTitle, parseJSON, arxivComment, icmlYear, acceptedProceedings, pmlrVolume, pmlrVolumes, pmlrLink, fromPMLR, fromDBLP, fromCrossref, dblpGraphURL, fromDBLPGraph, discover, normalizeDOI, resolvePublication };
 })();

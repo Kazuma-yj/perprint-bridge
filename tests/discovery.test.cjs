@@ -289,3 +289,69 @@ test('a failed PMLR directory is fetched only once within an attempt and retried
   await core.discover(args, request, { cache });
   assert.equal(directoryRequests, 2);
 });
+
+test('known DOI never falls back to a different DOI with the same title and author', async () => {
+  const request = async url => {
+    if (url.includes('/works/')) throw Error('HTTP 404');
+    if (url.includes('dblp.org/search')) return { body: JSON.stringify({ result: { hits: { hit: [{ info: {
+      type: 'Conference and Workshop Papers', title, author: 'Gu, Chenchen', venue: 'ICML', year: '2025',
+      ee: 'https://doi.org/10.1000/wrong', doi: '10.1000/wrong'
+    } }] } } }), contentType: 'application/json' };
+    throw Error('Unexpected request');
+  };
+  const result = await core.resolvePublication({ title, firstAuthor: 'Gu', doi: '10.1000/right', published: true }, request);
+  assert.equal(result.candidates.length, 0);
+  assert.equal(result.status, 'partial_failure');
+  assert.ok(result.checks.some(c => c.source === 'Record identity'));
+});
+
+test('exact DOI lookup still requires matching title and first author', async () => {
+  const result = await core.resolvePublication({ title, firstAuthor: 'Gu', doi: '10.1000/right' }, async url => {
+    if (url.includes('/works/')) return { body: JSON.stringify({ message: {
+      type: 'journal-article', title: [title], DOI: '10.1000/right', author: [{ family: 'Other' }],
+      'container-title': ['Example Journal'], published: { 'date-parts': [[2025]] }
+    } }), contentType: 'application/json' };
+    if (url.includes('sparql.dblp')) return { body: '{"results":{"bindings":[]}}', contentType: 'application/json' };
+    if (url.includes('dblp.org')) return { body: '{"result":{"hits":{"hit":[]}}}', contentType: 'application/json' };
+    return { body: '{"message":{"items":[]}}', contentType: 'application/json' };
+  });
+  assert.equal(result.candidates.length, 0);
+});
+
+test('an existing published record is never replaced with an acceptance-only result', async () => {
+  const result = await core.resolvePublication({ title, firstAuthor: 'Gu', arxivId: '2604.21083', published: true }, async url => {
+    if (url.includes('arxiv.org')) return { body: '<td class="comments">To appear in Proceedings of the 2026 ACM Internet Measurement Conference (IMC \'26)</td>', contentType: 'text/html' };
+    if (url.includes('sparql.dblp')) return { body: '{"results":{"bindings":[]}}', contentType: 'application/json' };
+    if (url.includes('dblp.org')) return { body: '{"result":{"hits":{"hit":[]}}}', contentType: 'application/json' };
+    return { body: '{"message":{"items":[]}}', contentType: 'application/json' };
+  });
+  assert.equal(result.candidates.length, 0);
+  assert.equal(result.status, 'partial_failure');
+});
+
+test('a rate-limited DOI lookup does not send a second Crossref request', async () => {
+  let crossref = 0;
+  await core.resolvePublication({ title, firstAuthor: 'Gu', doi: '10.1000/example' }, async url => {
+    if (url.includes('api.crossref')) { crossref++; throw Error('HTTP 429'); }
+    if (url.includes('sparql.dblp')) return { body: '{"results":{"bindings":[]}}', contentType: 'application/json' };
+    return { body: '{"result":{"hits":{"hit":[]}}}', contentType: 'application/json' };
+  });
+  assert.equal(crossref, 1);
+});
+
+for (const { record } of require('./fixtures/crossref-publications.json').records) {
+  test('real DOI metadata resolves through the unified flow: ' + record.title[0], async () => {
+    let calls = 0;
+    const result = await core.resolvePublication({ title: record.title[0], firstAuthor: record.author[0].family,
+      doi: record.DOI, published: true }, async url => {
+      calls++;
+      assert.equal(url, 'https://api.crossref.org/works/' + encodeURIComponent(record.DOI));
+      return { body: JSON.stringify({ message: record }), contentType: 'application/json' };
+    });
+    assert.equal(calls, 1);
+    assert.equal(result.status, 'found');
+    assert.equal(result.candidates[0].doi, record.DOI);
+    assert.equal(result.candidates[0].venue, record['container-title'][0]);
+    assert.equal(result.candidates[0].pages, record.page);
+  });
+}

@@ -1,23 +1,24 @@
 # Preprint Bridge
 
-**Find the published version of an arXiv paper without losing your Zotero annotations.**
+**Find published versions, update publication information and check CCF ratings while keeping your Zotero annotations.**
 
-[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.0.0.md)
+[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.1.0.md)
 
-Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the conference or journal version of an arXiv preprint, review its publication metadata, and update your existing item after confirmation. Your item identity, attachments, annotations, notes, tags, and collection membership stay in place.
+Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the conference or journal version of a preprint and refresh existing publication records. Review the metadata, then update your existing item after confirmation. Your item identity, attachments, annotations, notes, tags, and collection membership stay in place.
 
 ## Features
 
 - **Find published versions:** look for matching conference papers and journal articles without an API key, then review the result before updating.
 - **Complete publication information:** fill in the proceedings or journal title, publication date, DOI, pages and volume when available. Recognized conferences include a full name, abbreviation and year, such as `(ICML 2024)` or `(KDD 2026)`.
-- **CCF rankings:** show a matching venue's grade from the 2026 directory in the review dialog and Extra field. The bundled dataset covers part of the directory; uncertain matches stay unranked.
+- **CCF rankings, including batch updates:** match existing conference or journal names locally and update the 2026 grade in Extra. Journals without abbreviations can match by full name. The bundled dataset covers part of the directory; uncertain matches stay unranked.
 - **Acceptance tracking:** explicit arXiv acceptance notes can be saved as provisional metadata and checked again after proceedings are published.
 - **Manual metadata transfer:** copy publication fields from an official record you have already imported into Zotero.
-- **Chinese and English menus**, a search progress indicator, and clear feedback when a source is unavailable.
+- **Return to arXiv:** open the original preprint page after the item's URL has been updated to the published version.
+- **One consistent Chinese/English menu** for all paper types, with a search progress indicator and clear feedback when a source is unavailable.
 
 ## Install
 
-1. Download **`preprint-bridge-1.0.0.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
+1. Download **`preprint-bridge-1.1.0.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File…** from the gear menu and select the XPI.
 3. Restart Zotero normally and enable Preprint Bridge if needed.
 
@@ -27,11 +28,21 @@ Existing installations using this repository's update feed can update through Zo
 
 ## Use
 
-### Find a published version
+Right-click a bibliographic parent item and open **Preprint Bridge**. Its commands keep the same names and order across preprints, accepted papers, conference papers and journal articles. Unsuitable commands are disabled rather than hidden; **How to use** explains the selection requirements.
 
-Select one arXiv **preprint parent item**, right-click it, and choose **Check publication or acceptance (review first)**. Review the title, venue, date and source link before confirming. Select the bibliographic item, not its PDF attachment.
+| Command | Selection |
+| --- | --- |
+| Review and update publication… | One preprint, conference paper or journal article |
+| Update CCF rating… | One or more conference papers or journal articles |
+| Copy published metadata to preprint… | One preprint or pending item plus one published record |
+| Open arXiv preprint | One item containing an arXiv identifier |
+| How to use | Read the command explanations |
 
-Automatic lookup needs a modern arXiv identifier such as `2403.06634` in the URL, DOI or Extra field, and a first author. It checks one selected item at a time. Pending conference items created by this plugin can be checked again with the same command.
+### Review a preprint or an existing publication
+
+Choose **Preprint Bridge → Review and update publication…**. Review the title, venue, date and source link before confirming. Select the bibliographic item, not its PDF attachment. The same command handles different publication sources automatically.
+
+A title and first author are required. An arXiv identifier such as `2403.06634` in URL, DOI or Extra helps find the published version, but is not required for title-based searches. An existing publication DOI is checked directly; fallback results cannot substitute a different DOI. Publication review processes one item at a time.
 
 The available fields depend on the publication type and source:
 
@@ -53,7 +64,17 @@ An acceptance-only result also includes `Publication status: Accepted; proceedin
 
 ### When automatic lookup cannot match
 
-Import the official publication with Zotero Connector. Select **both** the original arXiv preprint and the imported conference paper or journal article, then choose **Copy published metadata to preprint**. Review the result; different titles require an additional confirmation. Both items remain so you can decide whether to remove the duplicate.
+Import the official publication with Zotero Connector. Select **both** the original preprint and the imported conference paper or journal article, then choose **Preprint Bridge → Copy published metadata to preprint…**. Review the result; different titles require an additional confirmation. Both items remain so you can decide whether to remove the duplicate.
+
+### Update CCF ratings for existing papers
+
+Select one or more conference papers or journal articles and choose **Preprint Bridge → Update CCF rating…**. Review the proposed ratings and confirm once. Matching uses the existing conference/journal names and the local CCF directory; no publication search is needed.
+
+Only CCF labels in Extra are updated. Other metadata, user notes and pending-acceptance markers stay in place. Unmatched, ambiguous, read-only or busy items are skipped; the completion message reports the counts. A journal with no directory abbreviation gets a short label such as `CCF (2026): B`.
+
+### Open the original arXiv page
+
+Choose **Preprint Bridge → Open arXiv preprint**. The command also works after conversion to a published record because the arXiv identifier is retained in Extra.
 
 ### What changes
 
@@ -67,20 +88,13 @@ An automatic match requires the normalized title and first author to agree. The 
 
 Conference and journal records are searched through DBLP (including its official SPARQL service) and Crossref, with arXiv providing preprint and acceptance information. Coverage depends on what these services index and whether a record passes the matching checks. Sources may be incomplete or temporarily blocked. **No match does not establish that a paper is unpublished.**
 
-Version 1.0.0 additionally parses PMLR publication pages and searches nearby ICML proceedings directly. Other publishers currently rely on the indexed metadata rather than a dedicated page parser, so field completeness can vary. Validated paper examples include ICML, ICLR, NeurIPS and NAACL; see [test coverage](TESTING.md) and [data sources](DATA_SOURCES.md).
+The same review command also parses supported publication pages and can search nearby ICML proceedings directly. PMLR currently has a dedicated page parser; other publishers rely on DOI or indexed metadata, so field completeness can vary. Validated examples include conference papers from ICML, ICLR, NeurIPS and NAACL, plus journal articles in Machine Learning and Nature. See [test coverage](TESTING.md) and [data sources](DATA_SOURCES.md).
 
 CCF labels use the **2026 edition even for older papers**. They describe the venue, not the paper. Unlisted or ambiguous venues receive no automatic grade. See [data sources and extraction scope](DATA_SOURCES.md).
 
-<details>
-<summary>Additional command for existing PMLR records</summary>
-
-Select a conference-paper item whose URL points to a PMLR paper page, then choose **Review PMLR metadata and CCF rating**. This refreshes the proceedings details and the matching CCF grade after confirmation. This additional refresh command currently supports PMLR pages only.
-
-</details>
-
 ## Privacy and network access
 
-Publication checks run when you invoke a command. Depending on the search path, public services receive the item's title, first-author surname and/or arXiv identifier; matched publication pages are also fetched. Notes, annotations, PDF contents and your whole library are not uploaded by the plugin. There is no telemetry or plugin account.
+Publication checks run when you invoke a command. Depending on the search path, public services receive the item's title, first-author surname, DOI and/or arXiv identifier; matched publication pages are also fetched. Notes, annotations, PDF contents and your whole library are not uploaded by the plugin. There is no telemetry or plugin account.
 
 CCF matching runs locally. Some public directory data is cached temporarily in memory to reduce repeated requests. Zotero checks the GitHub-hosted update feed as part of its plugin update mechanism. Network requests have timeouts; the plugin does not repeatedly retry rate-limited requests.
 
@@ -88,7 +102,8 @@ CCF matching runs locally. Some public directory data is cached temporarily in m
 
 | Symptom | What to check |
 | --- | --- |
-| No context-menu command | Enable the plugin, leave Zotero safe mode, and select a supported parent item. The check command requires an arXiv preprint or a pending-publication item. |
+| No Preprint Bridge menu | Enable the plugin, leave Zotero safe mode, and select a bibliographic parent item. |
+| A command is greyed out | Check the selection requirements above and whether the item is editable or already being processed. Open How to use for details. |
 | First author is missing | Complete the item's author field or use the manual two-item command. |
 | Search takes a while | Several sources or larger proceedings indexes may need to be checked. A progress notification is shown. |
 | “Search incomplete” / HTML instead of JSON | A service returned an error or verification page. Try later, or import the official record and use manual transfer. |

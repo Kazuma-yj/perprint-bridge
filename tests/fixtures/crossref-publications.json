@@ -1,0 +1,114 @@
+{
+  "capturedOn": "2026-09-28",
+  "records": [
+    {
+      "source": "https://api.crossref.org/works/10.1023%2FA%3A1010933404324",
+      "record": {
+        "DOI": "10.1023/a:1010933404324",
+        "title": [
+          "Random Forests"
+        ],
+        "type": "journal-article",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "published": {
+          "date-parts": [
+            [
+              2001,
+              10
+            ]
+          ]
+        },
+        "page": "5-32",
+        "volume": "45",
+        "publisher": "Springer Science and Business Media LLC",
+        "author": [
+          {
+            "given": "Leo",
+            "family": "Breiman"
+          }
+        ]
+      }
+    },
+    {
+      "source": "https://api.crossref.org/works/10.1038%2Fnature14539",
+      "record": {
+        "DOI": "10.1038/nature14539",
+        "title": [
+          "Deep learning"
+        ],
+        "type": "journal-article",
+        "container-title": [
+          "Nature"
+        ],
+        "published": {
+          "date-parts": [
+            [
+              2015,
+              5,
+              27
+            ]
+          ]
+        },
+        "page": "436-444",
+        "volume": "521",
+        "publisher": "Springer Science and Business Media LLC",
+        "author": [
+          {
+            "given": "Yann",
+            "family": "LeCun"
+          },
+          {
+            "given": "Yoshua",
+            "family": "Bengio"
+          },
+          {
+            "given": "Geoffrey",
+            "family": "Hinton"
+          }
+        ]
+      }
+    },
+    {
+      "source": "https://api.crossref.org/works/10.18653%2Fv1%2FN19-1423",
+      "record": {
+        "DOI": "10.18653/v1/n19-1423",
+        "title": [
+          "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+        ],
+        "type": "proceedings-article",
+        "container-title": [
+          "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)"
+        ],
+        "published": {
+          "date-parts": [
+            [
+              2019
+            ]
+          ]
+        },
+        "page": "4171-4186",
+        "publisher": "Association for Computational Linguistics",
+        "author": [
+          {
+            "given": "Jacob",
+            "family": "Devlin"
+          },
+          {
+            "given": "Ming-Wei",
+            "family": "Chang"
+          },
+          {
+            "given": "Kenton",
+            "family": "Lee"
+          },
+          {
+            "given": "Kristina",
+            "family": "Toutanova"
+          }
+        ]
+      }
+    }
+  ]
+}

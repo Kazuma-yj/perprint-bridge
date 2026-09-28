@@ -1,5 +1,35 @@
 [
   {
+    "doi": "10.1023/A:1010933404324",
+    "title": "Random Forests",
+    "firstAuthor": "Breiman",
+    "itemType": "journalArticle",
+    "published": true,
+    "expectedURL": "https://doi.org/10.1023%2Fa%3A1010933404324",
+    "expectedYear": "2001",
+    "expectedCCF": "B"
+  },
+  {
+    "doi": "10.1038/nature14539",
+    "title": "Deep learning",
+    "firstAuthor": "LeCun",
+    "itemType": "journalArticle",
+    "published": true,
+    "expectedURL": "https://doi.org/10.1038%2Fnature14539",
+    "expectedYear": "2015"
+  },
+  {
+    "doi": "10.18653/v1/N19-1423",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "firstAuthor": "Devlin",
+    "itemType": "conferencePaper",
+    "conferenceName": "NAACL",
+    "published": true,
+    "expectedURL": "https://doi.org/10.18653%2Fv1%2Fn19-1423",
+    "expectedYear": "2019",
+    "expectedCCF": "B"
+  },
+  {
     "arxivId": "2403.06634",
     "title": "Stealing Part of a Production Language Model",
     "firstAuthor": "Carlini",
