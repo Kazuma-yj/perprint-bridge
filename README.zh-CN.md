@@ -1,37 +1,100 @@
-# Preprint Bridge：Zotero 10 预印本更新插件
+# Preprint Bridge
 
-这个插件会先查找正式发表版本，展示来源、题名、会议和链接，**只有你确认后才改写原 Zotero 条目**。原条目的 ID、PDF 附件、批注、笔记、标签和馆藏继续保留。
+**为 arXiv 预印本查找正式发表信息，保留你在 Zotero 中的附件与批注。**
+
+[English](README.md) · [下载安装](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [反馈问题](https://github.com/Kazuma-yj/perprint-bridge/issues) · [版本说明](releases/1.0.0.md)
+
+Preprint Bridge 是一个面向 **Zotero 10.0.x** 的插件。它查找论文的发表信息，在你核对并确认后更新原条目，同时保留条目 ID、附件、批注、笔记、标签与所属分类。
+
+## 功能
+
+- **查找正式版本**：使用 arXiv、PMLR 官方论文集、DBLP 与 Crossref，无需 API Key，不依赖 Semantic Scholar。
+- **完整会议信息**：在来源提供的情况下补全论文集名称、会议名称、年份、页码和卷次。识别到的会议名称附带缩写与年份，例如 `(ICML 2024)`、`(KDD 2026)`。
+- **CCF 评级**：核对窗口和“其他”字段显示匹配到的 CCF 2026 评级。内置数据覆盖目录的一部分，无法可靠匹配时不猜测评级。
+- **记录录用状态**：支持核对 arXiv 中明确的录用说明，标记为待正式出版，并在日后继续查询。
+- **手动复制信息**：从已导入 Zotero 的正式版本条目中复制出版字段。
+- **中英文界面**：显示检索等待提示，区分来源故障与未找到匹配结果。
+
+## 安装
+
+1. 前往 [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest)，下载 **`preprint-bridge-1.0.0.xpi`**。请选择 `.xpi` 安装包，不是 Source code 压缩包。
+2. 打开 Zotero 的 **工具 → 插件**，点击齿轮菜单，选择“从文件安装插件”，打开下载的 XPI。
+3. 正常重启 Zotero，确认 Preprint Bridge 已启用。
+
+已经使用本仓库更新地址的版本，可通过 Zotero 的插件更新检查升级。更新地址仍为 `example.com` 的早期版本，需要手动安装一次。自动更新需要能够访问 GitHub。
+
+**兼容范围：Zotero 10.0.x。** 当前清单不支持 Zotero 7/8/9 或 Zotero 11。本版已进行自动化测试和真实服务元数据检查，但尚未完成 Windows、macOS、Linux 上的完整桌面界面验证。详见[测试记录](TESTING.md)。
 
 ## 使用
 
-1. 将 `preprint-bridge-xxx.xpi` 拖入 Zotero 的「工具 → 插件」窗口安装。当前版本是 0.1.5，安装后重启 Zotero。
-2. 右键单击一篇 arXiv **预印本主条目**，选择「核对发表或录用信息（确认后更新）」。不要选择 PDF 附件。
-3. 查看检索结果及来源，确认无误后更新。有明确 ICML 年份时先查 PMLR；否则依次查询 DBLP 搜索接口、DBLP 官方 SPARQL 接口、Crossref。仍无匹配时，即使 arXiv 没有会议说明，也会查询 arXiv 提交前一年到后三年（不超过当前年份）的 ICML 主会论文集，最多 5 卷。若正式来源还没有记录，但 arXiv 评论明确给出了论文集、会议全称和届次，可选择记录**已录用、待正式出版**的信息；这种情况不会填入未经核实的正式 DOI，日后仍可用相同右键菜单重新查询。
-4. 若你已经通过 Zotero Connector 导入了正式版本，也可以同时选中预印本主条目和会议/期刊论文主条目，选择「将正式版本信息复制到预印本」。正式版本条目暂时保留，方便你检查后自行处理重复项。
+### 查找正式发表信息
 
-会议名称会附上缩写与年份，例如 `International Conference on Machine Learning (ICML 2025)`。「其他」字段只写 arXiv ID、简洁的 CCF 评级，以及需要区分录用和正式出版时的状态；旧版产生的冗长历史行会清理，个人备注保留。
+选中一个 arXiv **预印本主条目**，右键选择 **“核对发表或录用信息（确认后更新）”**。查看题名、会议或期刊、日期和来源链接，确认后写入。请选中文献条目，而不是下方的 PDF 附件。
 
-DBLP 搜索接口返回 HTTP 200 的反机器人 HTML 页面时，会继续尝试官方 SPARQL 接口和其他来源。只有未找到可靠记录时才展示未完成原因，不会把服务故障当成论文尚未发表。不会请求 Semantic Scholar，也不会自动删条目或替换带批注的 PDF。
+自动检索需要：URL、DOI 或“其他”字段中包含 `2403.06634` 这样的新版 arXiv 标识，并填写第一作者。每次检查一个条目。由本插件记录为“已录用，待正式出版”的会议条目，也可以通过同一菜单继续查询。
 
-## 构建和发布
+以一篇 ICML 论文为例，更新后可得到：
 
-```sh
-npm test
-python scripts/build.py
+| Zotero 字段 | 示例 |
+| --- | --- |
+| 论文集标题 | Proceedings of the 41st International Conference on Machine Learning |
+| 会议名称 | 41st International Conference on Machine Learning (ICML 2024) |
+| 系列 | Proceedings of Machine Learning Research |
+| 卷次 | 235 |
+| 页码 | 5680–5705 |
+
+“其他”字段只增加简要信息，并保留你原有的备注：
+
+```text
+arXiv: 2403.06634
+CCF (2026): A (ICML)
 ```
 
-XPI 生成在 `dist/`，同时生成带 XPI SHA-256 的 `update.json`。`manifest.json` 的更新地址指向 `https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/update.json`，其安装包地址指向同仓库 `dist/` 下的对应版本。发布新版本时须一起提交更新清单和安装包；已经发布的安装包不要覆盖，以便校验其哈希。插件 ID 在用户已经安装后不要随意更改。
+如果只能确认录用，还会增加 `出版状态：已录用，待正式出版`，保留 arXiv 链接，不虚构正式 DOI。
 
-若要从另一份同格式的 CCF 目录重新生成评级数据，安装 `pdfplumber` 后运行 `python scripts/extract_ccf.py <CCF目录.pdf>`；原 PDF 不包含在源码压缩包中。
+### 自动检索未匹配时
 
-本项目不依赖 npm 包；源码使用 MIT 许可证。当前版本仅面向 Zotero 10.0.x 和现代格式的 arXiv ID。自动 PMLR 检索现支持 ICML。0.1.5 的联网检索结果见 [测试记录](TESTING.md)；完整 Zotero 10.0.3 界面仍需在实际客户端验证。如仍出现错误，请从「工具 → 开发者 → 错误控制台」复制对应行。旧版 0.1.2 的安装包写有无效的 example.com 更新地址，0.1.3 及之后版本已改为 GitHub 地址。
+使用 Zotero Connector 导入正式发表版本。同时选中 **原预印本 + 正式会议论文或期刊文章**，右键选择 **“将正式版本信息复制到预印本”**。标题不同时会额外要求确认是否为同一篇论文。两个条目都会保留，是否删除重复条目由你决定。
 
-## 0.1.5 修复
+### 补全已有 PMLR 条目
 
-- arXiv 没有会议说明时也会查找 ICML；排除 GRaM 等附属工作坊。
-- 增加 DBLP 官方 SPARQL 备用检索，校验第一作者、题名及正式发表类型。
-- 支持出版方添加的 `Position:` / `Position Paper:` 前缀，以及元数据中的引号。其他实质性题名变化仍需手动核对。
-- PMLR 目录缓存 15 分钟，最多 12 份解析后的目录；不缓存验证页和失败请求。
-- 禁用插件后，未完成的检索不会继续弹窗或写入；初始化中的启动也会取消。
+选中 URL 指向 PMLR 论文页面的会议论文条目，右键选择 **“重新核对 PMLR 信息与 CCF 评级”**，核对后补全会议届次、论文集、日期和 CCF 等信息。
 
-`shutdown` 在 0.1.4 和 0.1.5 安装包中均存在。Zotero 10.0.3 在插件作用域未加载时也可能报告“missing bootstrap method”；安全模式日志不足以证明函数缺失。请在正常模式中验证启停，不将此警告标记为已彻底修复。
+### 更新哪些内容
+
+插件在原条目上更新出版字段。来源缺少页码、卷次或 DOI 时，会保留已有值；转为正式发表记录时会移除 arXiv DOI。“其他”中的个人备注会保留，旧版本插件生成的冗长信息会被精简。
+
+**原作者列表和 PDF 文件不会替换。** 请对照正式版本核对作者和 PDF，尤其注意预印本与正式版本的作者变化。插件不下载替换 PDF、不跨 PDF 迁移批注、不合并条目，也不自动删除重复条目。
+
+## 匹配规则
+
+自动匹配要求规范化后的题名与第一作者一致。允许正式版本增加 `Position:` 或 `Position Paper:` 前缀；其他实质性题名变化请使用双条目手动复制流程。
+
+PMLR 提供官方出版信息；DBLP 搜索不可用时会尝试其官方 SPARQL 服务，再尝试 Crossref。必要时检查预印本提交年份附近最多五个 ICML 主会论文集，这一步会排除附属工作坊。各来源可能收录不全或暂时无法访问，**未找到匹配不等于论文尚未发表**。
+
+CCF 标签统一使用 **2026 版目录，包括对早年论文的查询**。评级针对会议或期刊，不针对单篇论文。未收录或存在歧义时不自动填入。数据范围与来源见 [DATA_SOURCES.md](DATA_SOURCES.md)。
+
+## 隐私与网络
+
+只有执行相应命令时，插件才查询论文信息。根据检索路径，公开服务会收到论文题名、第一作者姓氏和／或 arXiv 标识；插件也会读取匹配到的出版页面。插件不上传笔记、批注、PDF 内容或整个文献库，无遥测，不需要插件账号。
+
+CCF 匹配在本地完成。经过验证的 PMLR 目录在内存中缓存 15 分钟。Zotero 的插件更新机制会访问 GitHub 上的更新信息。请求设有超时，限流时不会连续自动重试。
+
+## 常见问题
+
+| 现象 | 处理方法 |
+| --- | --- |
+| 右键没有菜单 | 确认插件启用、退出 Zotero 安全模式，并选中支持的主条目。核对命令面向 arXiv 预印本或待正式出版条目。 |
+| 提示缺少第一作者 | 补全作者字段，或导入正式版本后手动复制信息。 |
+| 检索等待较久 | 查询多个来源、大型 PMLR 目录时需要一些时间，界面会显示等待提示。 |
+| 提示“检索未完成”或返回 HTML | 来源可能返回故障页或验证页。稍后重试，或导入正式版本后使用手动复制。 |
+| 没有 CCF 评级 | 可能未列入目录、不在内置数据子集中，或缩写存在歧义；请核对官方目录。 |
+| 自动更新失败 | 检查 GitHub 访问情况，必要时从 Releases 手动安装新版 XPI。 |
+
+遇到可复现的问题，请[提交 Issue](https://github.com/Kazuma-yj/perprint-bridge/issues/new/choose)，提供 arXiv 标识、Zotero 与插件版本、预期结果和相关日志。公开日志前请删除私人信息。
+
+## 开发与许可
+
+本地测试、打包与发布方法见 [CONTRIBUTING.md](CONTRIBUTING.md)，验证结果与限制见 [TESTING.md](TESTING.md)。
+
+源代码采用 [MIT 许可证](LICENSE)，第三方数据来源见 [DATA_SOURCES.md](DATA_SOURCES.md)。本项目独立开发，与 Zotero、arXiv、CCF 无隶属关系。

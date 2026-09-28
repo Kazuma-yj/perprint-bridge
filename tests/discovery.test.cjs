@@ -237,12 +237,55 @@ test('a publisher record takes precedence over an arXiv acceptance note', async 
 
 test('rejects wrong first author and CoRR, accepts matching conference', () => {
   const records = { result: { hits: { hit: [
-    { info: { title, venue: 'CoRR', author: 'Gu, Chenchen', ee: 'https://arxiv.org/abs/2502.07776' } },
-    { info: { title, venue: 'ICML', author: 'Other, Person', ee: 'https://proceedings.mlr.press/v267/wrong.html' } },
-    { info: { title: title + '.', venue: 'ICML', author: 'Gu, Chenchen', year: '2025',
+    { info: { type: 'Informal Publications', title, venue: 'CoRR', author: 'Gu, Chenchen', ee: 'https://arxiv.org/abs/2502.07776' } },
+    { info: { type: 'Conference and Workshop Papers', title, venue: 'ICML', author: 'Other, Person', ee: 'https://proceedings.mlr.press/v267/wrong.html' } },
+    { info: { type: 'Conference and Workshop Papers', title: title + '.', venue: 'ICML', author: 'Gu, Chenchen', year: '2025',
       ee: 'https://proceedings.mlr.press/v267/gu25b.html' } }
   ] } } };
   const results = core.fromDBLP(records, title, 'Gu');
   assert.equal(results.length, 1);
   assert.equal(results[0].year, '2025');
+});
+
+test('DBLP skips malformed links and incomplete records without losing a valid result', () => {
+  const valid = { type: 'Conference and Workshop Papers', title, venue: 'ICML',
+    authors: { author: [{ text: 'Chenchen Gu' }] }, year: '2025', ee: 'https://example.org/paper' };
+  const infos = [
+    { ...valid, ee: 'not a URL' }, { ...valid, year: '' }, { ...valid, venue: '' },
+    { ...valid, type: 'Informal Publications' }, { ...valid, ee: 'https://user:pass@example.org/paper' },
+    { ...valid, ee: ['not a URL', 'https://arxiv.org/abs/2502.07776', valid.ee] }
+  ];
+  const results = core.fromDBLP({ result: { hits: { hit: infos.map(info => ({ info })) } } }, title, 'Gu');
+  assert.equal(results.length, 1);
+  assert.equal(results[0].url, valid.ee);
+  assert.equal(results[0].catalog, 'DBLP');
+});
+
+test('missing authors and incomplete Crossref citations are rejected', () => {
+  const info = { type: 'proceedings-article', title: [title], DOI: '10.1000/example',
+    author: [{ given: 'Chenchen', family: 'Gu' }], 'container-title': ['ICML'],
+    published: { 'date-parts': [[2025]] } };
+  const records = items => ({ message: { items } });
+  assert.equal(core.fromCrossref(records([info]), title, '').length, 0);
+  assert.equal(core.fromCrossref(records([{ ...info, 'container-title': [] }, { ...info, published: {} }]), title, 'Gu').length, 0);
+  const compound = { ...info, author: [{ given: 'Alex', family: 'van der Meer' }] };
+  assert.equal(core.fromCrossref(records([compound]), title, 'van der Meer').length, 1);
+  assert.equal(core.fromCrossref(records([{ ...info, author: [{ given: 'Alex', family: 'Meer' }] }]), title, 'van der Meer').length, 0);
+});
+
+test('a failed PMLR directory is fetched only once within an attempt and retried next time', async () => {
+  let directoryRequests = 0;
+  const cache = new Map();
+  const request = async url => {
+    if (url.includes('arxiv.org')) return { body: '<td class="comments">Accepted at ICML 2025</td>', contentType: 'text/html' };
+    if (url === 'https://proceedings.mlr.press/') { directoryRequests++; throw Error('HTTP 503'); }
+    if (url.includes('sparql.dblp')) return { body: '{"results":{"bindings":[]}}', contentType: 'application/json' };
+    if (url.includes('dblp.org')) return { body: '{"result":{"hits":{"hit":[]}}}', contentType: 'application/json' };
+    return { body: '{"message":{"items":[]}}', contentType: 'application/json' };
+  };
+  const args = { title, firstAuthor: 'Gu', arxivId: '2502.07776' };
+  assert.equal((await core.discover(args, request, { cache })).status, 'partial_failure');
+  assert.equal(directoryRequests, 1);
+  await core.discover(args, request, { cache });
+  assert.equal(directoryRequests, 2);
 });

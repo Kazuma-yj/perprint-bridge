@@ -1,10 +1,18 @@
-# 0.1.5 测试记录
+# 1.0.0 validation / 测试记录
 
-日期：2026-09-28。测试对象：与 `dist/preprint-bridge-0.1.5.xpi` 相同的代码。
+Date: 2026-09-28. Version: **1.0.0**.
+
+**38 automated tests passed.** Eight real-paper cases were replayed against responses captured from public services on the same date: six publication matches, one acceptance-only record, and one inconclusive search. Every case also checks the metadata written to a mock Zotero item. This final replay uses cached responses, not eight new live searches. Network/cache counts are recorded in the JSON report.
+
+Package verification compares every XPI entry to source, checks bootstrap callbacks, and verifies the manifest version, update URL and SHA-256. Release tests cover immutable published assets, draft publication order, failed uploads and conflicting tags.
+
+**Limit:** these checks do not exercise the real Zotero desktop UI. Installation, menus, translations and restart behavior still need full Windows/macOS/Linux client validation. No user's Zotero library was modified by the tests.
+
+以下是各样本的具体结果与测试范围。
 
 ## 真实论文检索
 
-访问真实 arXiv、PMLR、DBLP 和 Crossref 服务；最终复跑复用了本轮部分 HTTP 响应缓存。
+使用当天访问真实 arXiv、PMLR、DBLP 和 Crossref 服务获得的响应，对 1.0.0 最终代码进行缓存回放。
 每个匹配还调用插件的 `apply()`，检查模拟 Zotero 条目实际得到的会议名称、年份和简洁 CCF 字段。
 这不是 Windows Zotero 界面的自动化测试，也没有修改任何用户条目。
 
@@ -21,7 +29,8 @@
 
 共 8 个样本：6 个正式发表匹配、1 个仅录用状态、1 个未确认状态。
 “未确认”不是“尚未发表”的断言。全部状态和写入检查通过，不代表所有论文均能自动找到。
-完整检索状态及模拟写入字段见 [`tests/live-results-0.1.5.json`](tests/live-results-0.1.5.json)。
+完整检索状态及模拟写入字段见 [`tests/live-results-1.0.0.json`](tests/live-results-1.0.0.json)。
+历史 0.1.5 检查结果保留在 [`tests/live-results-0.1.5.json`](tests/live-results-0.1.5.json)。
 
 复跑联网测试（Node 与 Python 3；可能受服务状态影响）：
 
@@ -33,7 +42,7 @@ node scripts/live-smoke.cjs 2403.06634 2106.09685
 
 ## 自动回归测试
 
-`npm test`：26 项通过，包括：
+`npm test`：38 项通过，包括：
 
 - 无 arXiv 会议说明时，从官方 ICML 目录查找；排除 GRaM 等工作坊。
 - DBLP 返回 HTTP 200 HTML 时继续检索；429 不触发同源自动重试。
@@ -42,13 +51,18 @@ node scripts/live-smoke.cjs 2403.06634 2106.09685
 - 下一年份检索、PMLR 验证页失败、目录缓存和标题引号解析。
 - CCF、会议全称及缩写年份、简洁 Extra、原条目 ID / 附件保留。
 - 启动、重复启停、初始化中禁用、检索中禁用后不再写入或弹窗。
+- CCF 相邻表格行不再串入会议名称；ACNS、SACMAT、ASPLOS、CHI 等名称回归。
+- 缺失作者、复合姓氏、不完整 Crossref 元数据、DBLP 无效链接的保守处理。
+- 稀疏元数据保留已有 DOI、页码、卷次与详细日期；写入失败恢复原条目类型和字段。
+- 只读条目提前拒绝；禁用时关闭等待提示；失败目录在一次检索中只请求一次。
+- Release 重跑不覆盖已发布资源；上传失败不发布草稿；校验不符或标签冲突时停止。
 
 打包检查：XPI 内文件逐一与源码比较；确认全部 bootstrap 回调；清单版本、下载地址及安装包 SHA-256 一致。
 
 ## 尚需实际客户端验证
 
 运行环境没有 Windows Zotero 10.0.3，不能声称已验证该界面的安装、右键菜单、翻译和重启行为。
-请退出安全模式，正常重启 Zotero 后安装/启用 0.1.5，再核对一次条目。
+客户端验证应在正常模式下安装/启用 1.0.0，覆盖取消核对、更新条目、重复启停、重启与检查更新。
 
 0.1.4 和 0.1.5 的 XPI 均包含 `shutdown`。Zotero 10.0.3 的加载器在找不到插件作用域/回调时也会输出同一句
 `missing bootstrap method`。日志同时存在 `safeMode => true`，因此未将这条警告归因于函数缺失，也未声称警告已完全消除。

@@ -1,0 +1,27 @@
+name: Bug report / 问题反馈
+description: Report a reproducible issue with Preprint Bridge / 反馈可复现的问题
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions and OS / 版本与系统
+      placeholder: "Zotero 10.0.3 · Preprint Bridge 1.0.0 · Windows 11"
+    validations:
+      required: true
+  - type: input
+    id: paper
+    attributes:
+      label: arXiv ID or public paper URL / 论文标识或公开链接
+      placeholder: "2403.06634"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected result and actual result / 操作步骤、预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / 相关日志
+      description: Remove private information. Do not upload your Zotero database. / 请删除私人信息，不要上传文献库数据库。
+      render: text

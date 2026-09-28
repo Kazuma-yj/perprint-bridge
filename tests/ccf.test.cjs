@@ -36,3 +36,16 @@ test('CCF lookup abstains for ambiguous abbreviations and unlisted venues', () =
   assert.equal(ccf.lookup({ itemType: 'conferencePaper', conferenceName: '42nd International Conference on Machine Learning (ICML 2025)' }).grade, 'A');
   assert.equal(ccf.lookup({ itemType: 'conferencePaper', conferenceName: 'ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD 2026)' }).acronym, 'SIGKDD');
 });
+
+test('CCF cell extraction keeps neighboring table rows out of conference names', () => {
+  const expected = {
+    ACNS: 'International Conference on Applied Cryptography and Network Security',
+    SACMAT: 'ACM Symposium on Access Control Models and Technologies',
+    ASPLOS: 'International Conference on Architectural Support for Programming Languages and Operating Systems',
+    CHI: 'ACM Conference on Human Factors in Computing Systems'
+  };
+  for (const [venue, name] of Object.entries(expected)) {
+    assert.equal(ccf.lookup({ itemType: 'conferencePaper', venue }).title, name);
+  }
+  assert.ok(ccf.lookup({ itemType: 'conferencePaper', venue: 'HotStorage' }));
+});

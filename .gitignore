@@ -2,3 +2,6 @@ dist/*
 !dist/preprint-bridge-0.1.3.xpi
 !dist/preprint-bridge-0.1.4.xpi
 !dist/preprint-bridge-0.1.5.xpi
+!dist/preprint-bridge-1.0.0.xpi
+__pycache__/
+*.pyc

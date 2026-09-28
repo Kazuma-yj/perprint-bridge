@@ -16,6 +16,7 @@ const responses = new Map();
 const cacheDir = process.env.SMOKE_CACHE_DIR;
 if (cacheDir) fs.mkdirSync(cacheDir, { recursive: true });
 const parsedCache = new Map();
+const requestCounts = { network: 0, diskCache: 0, memoryCache: 0 };
 const python = `
 import json,sys,urllib.request,urllib.error
 try:
@@ -28,9 +29,10 @@ except Exception as e:
  print(json.dumps({'error':str(e)}))
 `;
 async function request(url, { maxBytes = 1_000_000 } = {}) {
-  if (responses.has(url)) return responses.get(url);
+  if (responses.has(url)) { requestCounts.memoryCache++; return responses.get(url); }
   const cacheFile = cacheDir && path.join(cacheDir, require('node:crypto').createHash('sha256').update(url).digest('hex') + '.json');
-  if (cacheFile && fs.existsSync(cacheFile)) return JSON.parse(fs.readFileSync(cacheFile, 'utf8')); 
+  if (cacheFile && fs.existsSync(cacheFile)) { requestCounts.diskCache++; return JSON.parse(fs.readFileSync(cacheFile, 'utf8')); }
+  requestCounts.network++;
   process.stderr.write(`GET ${url.startsWith('https://sparql.dblp.org/') ? 'https://sparql.dblp.org/sparql (publication query)' : url}\n`);
   const { stdout } = await execFile(process.env.PYTHON || 'python3', ['-c', python, url,
     url.startsWith('https://sparql.dblp.org/') ? 'application/sparql-results+json' :
@@ -65,6 +67,8 @@ async function request(url, { maxBytes = 1_000_000 } = {}) {
       candidates, checks: result.checks });
     process.stderr.write(`${passed ? 'PASS' : 'FAIL'} ${paper.arxivId}: ${result.status}\n`);
   }
-  console.log(JSON.stringify({ checkedAt: new Date().toISOString(), cases: report }, null, 2));
+  console.log(JSON.stringify({ checkedAt: new Date().toISOString(),
+    pluginVersion: JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8')).version,
+    requestCounts, cases: report }, null, 2));
   if (report.some(r => !r.passed)) process.exitCode = 1;
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -18,12 +18,19 @@ var PreprintBridgeCore = (() => {
   const titleKey = (s) => normal(String(s || "").replace(/^\s*position(?:\s+paper)?\s*:\s*/i, ""));
   const sameTitle = (a, b) => !!titleKey(a) && titleKey(a) === titleKey(b);
   const authorMatches = (authors, first) => {
-    if (!first) return true;
+    if (!normal(first)) return false;
     if (!authors || !authors.length) return false;
-    return normal(authors[0]).split(" ").includes(normal(first).split(" ").at(-1));
+    return (" " + normal(authors[0]) + " ").includes(" " + normal(first) + " ");
   };
   const arxivDOI = (doi) => /(?:^|\/)arxiv\./i.test(String(doi || ""));
   const yearFrom = (s) => /(?:19|20)\d{2}/.exec(String(s || ""))?.[0] || "";
+  function publicationURL(value) {
+    try {
+      const url = new URL(value);
+      if (url.protocol !== "https:" || url.username || url.password || /(^|\.)arxiv\.org$/i.test(url.hostname)) return null;
+      return url.href;
+    } catch { return null; }
+  }
 
   function parseJSON(body, contentType, provider) {
     const raw = String(body || "").trim();
@@ -131,18 +138,21 @@ var PreprintBridgeCore = (() => {
     const result = [];
     for (const hit of Array.isArray(hits) ? hits : [hits]) {
       const info = hit?.info || {};
+      if (!["Journal Articles", "Conference and Workshop Papers"].includes(info.type)) continue;
       const authors = info.authors?.author || info.author || [];
       const list = (Array.isArray(authors) ? authors : [authors]).map(a => typeof a === "string" ? a : a?.text || "");
       if (!sameTitle(title, String(info.title || "").replace(/\.$/, "")) || !authorMatches(list, firstAuthor)) continue;
       if (/^(corr|arxiv)$/i.test(info.venue || "")) continue;
-      const url = typeof info.ee === "string" ? info.ee : Array.isArray(info.ee) ? info.ee[0] : info.url;
-      if (!url || !/^https:\/\//i.test(url) || /(?:^|\.)arxiv\.org/i.test(new URL(url).hostname)) continue;
+      const links = Array.isArray(info.ee) ? info.ee : [info.ee, info.url];
+      const url = links.map(publicationURL).find(Boolean);
+      if (!url || !info.venue || !/^(?:19|20)\d{2}$/.test(String(info.year || ""))) continue;
       result.push({
         source: "DBLP", itemType: /journal/i.test(info.type || "") ? "journalArticle" : "conferencePaper",
         title: strip(info.title).replace(/\.$/, ""), venue: strip(info.venue),
         year: String(info.year || ""), pages: String(info.pages || ""),
         volume: String(info.volume || ""), publisher: "", url,
-        doi: arxivDOI(info.doi) ? "" : String(info.doi || ""), authors: list
+        doi: arxivDOI(info.doi) ? "" : String(info.doi || ""), authors: list, catalog: "DBLP",
+        conferenceName: info.type === "Conference and Workshop Papers" ? strip(info.venue) : ""
       });
     }
     return result;
@@ -156,13 +166,15 @@ var PreprintBridgeCore = (() => {
       const authors = (info.author || []).map(a => [a.given, a.family].filter(Boolean).join(" "));
       if (!sameTitle(title, info.title?.[0]) || !authorMatches(authors, firstAuthor)) continue;
       if (!info.DOI || arxivDOI(info.DOI)) continue;
+      const venue = info["container-title"]?.[0];
+      const year = String(info.published?.["date-parts"]?.[0]?.[0] || "");
+      if (!venue || !/^(?:19|20)\d{2}$/.test(year)) continue;
       result.push({
         source: "Crossref", itemType: info.type === "journal-article" ? "journalArticle" : "conferencePaper",
-        title: info.title[0], venue: info["container-title"]?.[0] || "",
-        year: String(info.published?.["date-parts"]?.[0]?.[0] || ""),
+        title: info.title[0], venue, year,
         pages: String(info.page || ""), volume: String(info.volume || ""),
         publisher: String(info.publisher || ""), doi: info.DOI,
-        url: "https://doi.org/" + encodeURIComponent(info.DOI), authors
+        url: "https://doi.org/" + encodeURIComponent(info.DOI), authors, catalog: "Crossref"
       });
     }
     return result;
@@ -251,7 +263,7 @@ SELECT DISTINCT ?paper ?title ?kind ?venue ?year ?url ?author ?booktitle ?pages 
     }
     async function getDirectory() {
       if (directory) return directory;
-      directory = await cached("pmlr-directory", async () => {
+      directory = cached("pmlr-directory", async () => {
         const home = await request("https://proceedings.mlr.press/");
         const volumes = pmlrVolumes(home.body);
         if (!volumes.length) throw Error("PMLR volume directory could not be read (possible verification page or changed format)");

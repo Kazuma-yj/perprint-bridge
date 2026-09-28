@@ -1,4 +1,4 @@
-"""Extract conservative abbreviation/title rankings from the supplied CCF 2026 PDF.
+"""Extract rankings from CCF's seventh-edition (March 2026) directory.
 
 Usage: python scripts/extract_ccf.py path/to/ccf-2026.pdf
 Requires pdfplumber for regeneration. The source PDF is not redistributed.
@@ -11,6 +11,22 @@ from pathlib import Path
 import pdfplumber
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def cell_text(page, cell):
+    """Assign each glyph to the cell containing its center.
+
+    A few PDF glyph boxes extend past row borders. Cropping cuts and duplicates
+    those glyphs in adjacent rows; requiring full containment drops the last
+    line. Center assignment keeps each glyph once, with its original geometry.
+    """
+    if not cell:
+        return ""
+    left, top, right, bottom = cell
+    chars = [c for c in page.chars
+             if left <= (c["x0"] + c["x1"]) / 2 < right
+             and top <= (c["top"] + c["bottom"]) / 2 < bottom]
+    return pdfplumber.utils.extract_text(chars, x_tolerance=2, y_tolerance=2) or ""
 # Page spans refer to the 72-page CCF directory (2026), counting the cover.
 SECTIONS = [
     (2, 4, "journal", "计算机体系结构/并行与分布计算/存储系统"),
@@ -61,8 +77,7 @@ def main(pdf_path):
                     for row in table.rows:
                         if len(row.cells) < 5:
                             continue
-                        cells = [(page.crop(cell).extract_text(x_tolerance=2) or "")
-                                 if cell else "" for cell in row.cells]
+                        cells = [cell_text(page, cell) for cell in row.cells]
                         if not re.fullmatch(r"\d{1,3}", cells[0].strip()):
                             continue
                         acronym = " ".join(cells[1].split())
@@ -71,7 +86,7 @@ def main(pdf_path):
                         # abstain rather than assigning an unreliable ranking.
                         if not re.fullmatch(r"[A-Za-z][A-Za-z0-9+./&-]{1,19}", acronym):
                             continue
-                        if len(title) < 12 or not re.search(r"[A-Za-z]{4}", title):
+                        if len(title) < 6 or not re.search(r"[A-Za-z]{4}", title):
                             continue
                         entries.append({"acronym": acronym, "title": title,
                                         "grade": grade, "kind": kind,
@@ -83,11 +98,11 @@ def main(pdf_path):
     # ambiguity and never guesses when distinct grades match.
     entries.sort(key=lambda x: (x["kind"], x["acronym"].casefold(), x["page"]))
     out = ROOT / "content" / "ccf-data.js"
-    out.write_text("/* Extracted from the user-supplied CCF 2026 directory. */\n"
+    out.write_text("/* CCF seventh edition (March 2026). Source and extraction notes: DATA_SOURCES.md. */\n"
                    "var PreprintBridgeCCFEntries = "
                    + json.dumps(entries, ensure_ascii=False, separators=(",", ":"))
                    + ";\n", encoding="utf-8")
-    print(f"{len(entries)} verified table rows -> {out}")
+    print(f"{len(entries)} parsed table rows -> {out}")
 
 
 if __name__ == "__main__":

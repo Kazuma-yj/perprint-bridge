@@ -1,5 +1,7 @@
-name: Check and build
+name: Check, build and release
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -10,9 +12,33 @@ jobs:
           node-version: '24'
       - run: npm test
       - run: python3 scripts/build.py
+      - run: python3 scripts/verify_package.py
+      - name: Check committed package and update feed
+        run: |
+          package=$(node -p "'dist/preprint-bridge-' + require('./manifest.json').version + '.xpi'")
+          git ls-files --error-unmatch "$package"
+          git diff --exit-code -- dist update.json
       - uses: actions/upload-artifact@v4
         with:
           name: preprint-bridge-xpi
           path: |
             dist/*.xpi
             update.json
+  release:
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Kazuma-yj/perprint-bridge'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/publish-release.cjs

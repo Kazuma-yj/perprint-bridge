@@ -166,9 +166,13 @@ test('IMC 2026 acceptance is reviewable and remains recheckable without an inven
 });
 
 test('disabling the plugin during a search prevents late prompts or item writes', async () => {
-  let resolveRequest, requests = 0, prompts = 0, writes = 0;
+  let resolveRequest, requests = 0, prompts = 0, writes = 0, shown = 0, closed = 0;
   const sandbox = vm.createContext({ URL, Zotero: {
     locale: 'zh-CN', debug() {}, getMainWindow: () => null,
+    ProgressWindow: class {
+      changeHeadline() {} addDescription() {}
+      show() { shown++; } close() { closed++; }
+    },
     HTTP: { request() { requests++; return new Promise(resolve => { resolveRequest = resolve; }); } },
     MenuManager: { unregisterMenu() {} }
   }, Services: { prompt: { alert() { prompts++; }, confirm() { prompts++; return true; } } } });
@@ -180,10 +184,75 @@ test('disabling the plugin during a search prevents late prompts or item writes'
     getField: name => name === 'url' ? 'https://arxiv.org/abs/2403.06634' : '',
     setField() { writes++; }, async saveTx() { writes++; } };
   const pending = plugin.checkItem(item);
+  assert.equal(shown, 1);
   plugin.stop();
+  assert.equal(closed, 1);
   resolveRequest({ responseText: '<html></html>', getResponseHeader: () => 'text/html' });
   await pending;
   assert.equal(requests, 1);
   assert.equal(prompts, 0);
   assert.equal(writes, 0);
+  assert.equal(closed, 1);
+});
+
+function harness(fields, overrides = {}) {
+  const item = {
+    id: 1, itemType: 'conferencePaper', isEditable: () => true,
+    getDisplayTitle: () => fields.title, getCreators: () => [{ lastName: 'Gu' }],
+    getField: name => fields[name] || '', setField: (name, value) => { fields[name] = value; },
+    setType(type) { this.itemType = type; },
+    toJSON() { return { ...fields, itemType: this.itemType }; },
+    fromJSON(snapshot) {
+      this.itemType = snapshot.itemType;
+      for (const key of Object.keys(fields)) delete fields[key];
+      Object.assign(fields, snapshot); delete fields.itemType;
+    },
+    async saveTx() { this.saved = true; }, ...overrides
+  };
+  const alerts = [];
+  const sandbox = vm.createContext({ URL, Zotero: {
+    locale: 'en-US', debug() {}, getMainWindow: () => null, ItemTypes: { getID: type => type },
+    HTTP: { request() { throw Error('Unexpected network request'); } }
+  }, Services: { prompt: { alert(_win, _title, body) { alerts.push(body); } } } });
+  for (const file of ['core.js', 'ccf-data.js', 'ccf.js', 'plugin.js']) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'content', file), 'utf8'), sandbox);
+  }
+  return { item, plugin: sandbox.PreprintBridge, alerts };
+}
+
+test('sparse metadata preserves an existing DOI, pagination, volume and detailed date', async () => {
+  const fields = { title: 'Example Paper', url: 'https://example.org/paper', DOI: '10.1000/existing',
+    pages: '10-20', volume: '42', date: '2024-07-08', accessDate: '2026-09-28 12:00:00' };
+  const { item, plugin } = harness(fields);
+  await plugin.apply(item, { title: fields.title, url: fields.url, year: '2024',
+    itemType: 'conferencePaper', venue: 'Example Proceedings' }, null);
+  assert.equal(fields.DOI, '10.1000/existing');
+  assert.equal(fields.pages, '10-20');
+  assert.equal(fields.volume, '42');
+  assert.equal(fields.date, '2024-07-08');
+  assert.equal(fields.accessDate, '2026-09-28 12:00:00');
+});
+
+test('a failed save restores item type and original fields', async () => {
+  const fields = { title: 'Example Paper', url: 'https://arxiv.org/abs/2401.01234',
+    DOI: '10.48550/arXiv.2401.01234', date: '2024', extra: 'Keep this note' };
+  const original = { ...fields };
+  const { item, plugin } = harness(fields, { itemType: 'preprint', async saveTx() { throw Error('Disk full'); } });
+  await assert.rejects(plugin.apply(item, { title: fields.title, itemType: 'conferencePaper',
+    year: '2025', venue: 'Example Proceedings', url: 'https://example.org/paper' }, '2401.01234'), /Disk full/);
+  assert.equal(item.itemType, 'preprint');
+  assert.deepEqual(fields, original);
+});
+
+test('read-only and missing-author items are rejected before network or writes', async () => {
+  const fields = { title: 'Example Paper', url: 'https://arxiv.org/abs/2401.01234' };
+  const readonly = harness({ ...fields }, { isEditable: () => false });
+  await readonly.plugin.checkItem(readonly.item);
+  assert.match(readonly.alerts[0], /read-only/);
+  await assert.rejects(readonly.plugin.apply(readonly.item, {}, null), /not editable/);
+  assert.equal(readonly.item.saved, undefined);
+  const missing = harness({ ...fields }, { getCreators: () => [] });
+  await missing.plugin.checkItem(missing.item);
+  assert.match(missing.alerts[0], /first author is missing/);
+  assert.equal(missing.item.saved, undefined);
 });

@@ -4,6 +4,7 @@ var PreprintBridge = (() => {
   const menus = [];
   const busy = new Set();
   const discoveryCache = new Map();
+  const progressWindows = new Set();
   let generation = 0;
   const zh = () => String(Zotero.locale || "").toLowerCase().startsWith("zh");
   const message = (cn, en) => zh() ? cn : en;
@@ -11,7 +12,23 @@ var PreprintBridge = (() => {
   const title = "Preprint Bridge";
   const alert = (text) => Services.prompt.alert(win(), title, text);
   const log = (line) => Zotero.debug("[Preprint Bridge] " + line);
+  function showProgress() {
+    if (typeof Zotero.ProgressWindow !== "function") return null;
+    try {
+      const progress = new Zotero.ProgressWindow({ closeOnClick: true });
+      progress.changeHeadline(title);
+      progress.addDescription(message("正在核对发表信息，请稍候。检索多个来源可能需要一些时间。", "Checking publication information. Searching multiple sources may take a little while."));
+      progress.show();
+      progressWindows.add(progress);
+      return progress;
+    } catch (error) { log("Progress window: " + error); return null; }
+  }
+  function closeProgress(progress) {
+    if (!progress || !progressWindows.delete(progress)) return;
+    try { progress.close(); } catch (error) { log("Progress close: " + error); }
+  }
   const selected = () => Zotero.getActiveZoteroPane()?.getSelectedItems() || [];
+  const editable = item => !item?.deleted && (typeof item?.isEditable !== "function" || item.isEditable());
   const arxivOf = (item) => PreprintBridgeCore.arxivID(
     [item.getField("url"), item.getField("DOI"), item.getField("extra")].join(" ")
   );
@@ -96,6 +113,7 @@ var PreprintBridge = (() => {
   }
 
   async function apply(item, candidate, arxivId, { allowTitleChange = false } = {}) {
+    if (!editable(item)) throw Error(message("此条目不可编辑，请检查馆藏权限或条目是否已删除。", "This item is not editable. Check library permissions or whether it was deleted."));
     candidate = withRating(candidate);
     if (!allowTitleChange && !PreprintBridgeCore.sameTitle(item.getDisplayTitle(), candidate.title)) {
       throw Error(message("标题与预印本不一致，已停止写入。", "Title mismatch; no changes were made."));
@@ -106,17 +124,22 @@ var PreprintBridge = (() => {
     const original = item.toJSON();
     const oldURL = item.getField("url");
     const changedURL = !!oldURL && oldURL !== candidate.url;
+    const oldDOI = item.getField("DOI");
+    const oldDate = item.getField("date");
+    const keepDetailedDate = item.itemType === candidate.itemType && oldURL === candidate.url &&
+      !candidate.date && /\b(?:19|20)\d{2}\b/.exec(oldDate)?.[0] === String(candidate.year);
     try {
       if (item.itemType !== candidate.itemType) item.setType(Zotero.ItemTypes.getID(candidate.itemType));
       item.setField("title", candidate.title);
-      item.setField("date", candidate.date || candidate.year);
-      item.setField("url", candidate.url || "");
+      if (!keepDetailedDate) item.setField("date", candidate.date || candidate.year);
+      if (candidate.url) item.setField("url", candidate.url);
       if (candidate.catalog) item.setField("libraryCatalog", candidate.catalog);
-      if (changedURL) item.setField("accessDate", "");
+      if (candidate.url && changedURL) item.setField("accessDate", "");
       // Never leave the arXiv DataCite DOI on an official publication item.
-      item.setField("DOI", candidate.doi && !/arxiv\./i.test(candidate.doi) ? candidate.doi : "");
-      item.setField("pages", candidate.pages || "");
-      item.setField("volume", candidate.volume || "");
+      if (candidate.doi && !/arxiv\./i.test(candidate.doi)) item.setField("DOI", candidate.doi);
+      else if (/arxiv\./i.test(oldDOI)) item.setField("DOI", "");
+      if (candidate.pages) item.setField("pages", candidate.pages);
+      if (candidate.volume) item.setField("volume", candidate.volume);
       if (candidate.itemType === "conferencePaper") {
         item.setField("proceedingsTitle", candidate.venue);
         if (candidate.series) item.setField("series", candidate.series);
@@ -162,18 +185,23 @@ var PreprintBridge = (() => {
   async function checkItem(item) {
     const id = arxivOf(item);
     if (!id) return alert(message("请选择带 arXiv 标识的预印本主条目。", "Select an arXiv preprint parent item."));
+    if (!editable(item)) return alert(message("此馆藏中的条目不可编辑。", "This library item is read-only."));
+    const firstAuthor = item.getCreators()[0]?.lastName || "";
+    if (!firstAuthor.trim()) return alert(message("条目缺少第一作者。请先补全作者，或使用手动复制正式版本信息。", "The first author is missing. Add the author or copy metadata from a published Zotero item."));
     if (busy.has(item.id)) return alert(message("此条目正在检索，请稍候。", "This item is already being checked."));
     const started = generation;
     busy.add(item.id);
+    const progress = showProgress();
     try {
       const result = await PreprintBridgeCore.discover({
-        title: item.getDisplayTitle(), firstAuthor: item.getCreators()[0]?.lastName || "", arxivId: id
+        title: item.getDisplayTitle(), firstAuthor, arxivId: id
       }, async (url, options) => {
         if (started !== generation) throw Error("Search cancelled: plugin disabled");
         const reply = await request(url, options);
         if (started !== generation) throw Error("Search cancelled: plugin disabled");
         return reply;
       }, { cache: discoveryCache });
+      closeProgress(progress);
       if (started !== generation) return;
       result.candidates = result.candidates.map(withRating);
       log(JSON.stringify(result.checks));
@@ -204,7 +232,7 @@ var PreprintBridge = (() => {
       if (started !== generation) return;
       log("Update failed: " + (error?.stack || error));
       alert(message("更新失败：", "Update failed: ") + String(error?.message || error));
-    } finally { busy.delete(item.id); }
+    } finally { closeProgress(progress); busy.delete(item.id); }
   }
 
   async function copySelected() {
@@ -212,6 +240,8 @@ var PreprintBridge = (() => {
     const preprint = items.find(isPreprint);
     const source = items.find(item => item !== preprint && published(item));
     if (!preprint || !source || items.length !== 2) return;
+    if (busy.has(preprint.id)) return alert(message("此条目正在检索，请稍候。", "This item is already being checked."));
+    if (!editable(preprint)) return alert(message("此馆藏中的条目不可编辑。", "This library item is read-only."));
     const candidate = withRating(candidateFromItem(source));
     if (!PreprintBridgeCore.sameTitle(preprint.getDisplayTitle(), candidate.title) &&
       !Services.prompt.confirm(win(), title,
@@ -219,22 +249,26 @@ var PreprintBridge = (() => {
         preprint.getDisplayTitle() + "\n→ " + candidate.title)) return;
     if (!confirm(candidate, message("正式版本条目会保留，确认信息后可自行删除重复条目。", "The source item will remain; delete the duplicate after review if desired."))) return;
     try {
+      busy.add(preprint.id);
       await apply(preprint, candidate, arxivOf(preprint), { allowTitleChange: true });
       alert(message("信息已复制到原预印本条目，来源条目没有删除。", "Metadata copied to the original item; the source was not deleted."));
     } catch (error) {
       log("Copy failed: " + (error?.stack || error));
       alert(message("复制失败：", "Copy failed: ") + String(error?.message || error));
-    }
+    } finally { busy.delete(preprint.id); }
   }
 
   async function refreshPMLR(item) {
     const volume = pmlrVolumeOf(item);
     if (!volume || busy.has(item.id)) return;
+    if (!editable(item)) return alert(message("此馆藏中的条目不可编辑。", "This library item is read-only."));
     const started = generation;
     busy.add(item.id);
+    const progress = showProgress();
     try {
       const url = item.getField("url");
       const reply = await request(url);
+      closeProgress(progress);
       if (started !== generation) return;
       const candidate = PreprintBridgeCore.fromPMLR(reply.body, url, volume,
         item.getDisplayTitle(), item.getCreators()[0]?.lastName || "");
@@ -247,7 +281,7 @@ var PreprintBridge = (() => {
       if (started !== generation) return;
       log("Refresh failed: " + (error?.stack || error));
       alert(message("核对失败：", "Review failed: ") + String(error?.message || error));
-    } finally { busy.delete(item.id); }
+    } finally { closeProgress(progress); busy.delete(item.id); }
   }
 
   function start() {
@@ -291,6 +325,7 @@ var PreprintBridge = (() => {
   function stop() {
     ++generation;
     discoveryCache.clear();
+    for (const progress of [...progressWindows]) closeProgress(progress);
     for (const id of menus.splice(0)) Zotero.MenuManager.unregisterMenu(id);
   }
   return { start, stop, checkItem, refreshPMLR, apply };
