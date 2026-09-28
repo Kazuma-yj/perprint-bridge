@@ -28,6 +28,22 @@ jobs:
           path: ui-results/
       - run: python3 scripts/build.py
       - run: python3 scripts/verify_package.py
+      - name: Download official Zotero 10.0.3
+        run: |
+          curl --fail --location --retry 2 https://download.zotero.org/client/release/10.0.3/Zotero-10.0.3_linux-x86_64.tar.xz --output "$RUNNER_TEMP/zotero.tar.xz"
+          tar -xf "$RUNNER_TEMP/zotero.tar.xz" -C "$RUNNER_TEMP"
+      - name: Test the actual XPI in Zotero
+        env:
+          MOZ_HEADLESS: '1'
+        run: |
+          package=$(node -p "'dist/preprint-bridge-' + require('./manifest.json').version + '.xpi'")
+          python3 scripts/zotero-smoke.py "$RUNNER_TEMP/Zotero_linux-x86_64/zotero" dist/preprint-bridge-1.2.0.xpi zotero-results/old --expect-blank
+          python3 scripts/zotero-smoke.py "$RUNNER_TEMP/Zotero_linux-x86_64/zotero" "$package" zotero-results/current
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zotero-native-validation
+          path: zotero-results/
       - name: Check committed package and update feed
         run: |
           package=$(node -p "'dist/preprint-bridge-' + require('./manifest.json').version + '.xpi'")

@@ -1,18 +1,34 @@
-# 1.2.0 validation / 测试记录
+# 1.2.1 validation / 测试记录
 
-Date: 2026-09-28. Version: **1.2.0**.
+Date: 2026-09-28. Version: **1.2.1**.
 
-**68 automated tests passed.** Eleven workflow cases cover ten distinct papers: nine publication matches, one acceptance-only record, and one inconclusive search. This release replays cached responses captured earlier on the same date, including three DOI records and eight arXiv cases. BERT appears in both the preprint and published-DOI workflows. Each match checks the metadata written to a mock Zotero item. The final replay uses cached responses; network/cache counts are recorded in the JSON report.
+**69 automated tests passed.** Eleven workflow cases cover ten distinct papers: nine publication matches, one acceptance-only record, and one inconclusive search. This release replays cached responses captured earlier on the same date, including three DOI records and eight arXiv cases. BERT appears in both the preprint and published-DOI workflows. Each match checks the metadata written to a mock Zotero item. The final replay uses cached responses; network/cache counts are recorded in the JSON report.
 
 Package verification compares every XPI entry to source, checks bootstrap callbacks, and verifies the manifest version, update URL and SHA-256. Release tests cover immutable published assets, draft publication order, failed uploads and conflicting tags.
 
-**Limit:** these checks do not exercise the real Zotero desktop UI. Installation, menus, translations and restart behavior still need full Windows/macOS/Linux client validation. No user's Zotero library was modified by the tests.
+**Native regression:** the actual 1.2.0 XPI reproduces a blank `about:blank` window in official Linux Zotero 10.0.3. The actual 1.2.1 XPI passes 16 native checks, including registered chrome loading, visible layout, real-item preview, database save, undo, reopen and disable/enable. See [native report](tests/zotero-results-1.2.1.json). Tests use a disposable profile and recorded metadata; no user library is modified.
 
-**All five XHTML interaction scenarios passed in Chromium 151.0.7922.34, with zero page errors.** [Validation run](https://github.com/Kazuma-yj/perprint-bridge/actions/runs/36443503269) · [Browser report](tests/ui-results-1.2.0.json). The suite runs in CI as a release gate. It renders the actual packaged UI with a fixture controller; this is distinct from testing the Zotero desktop application.
+**Limit:** Windows and macOS have not been tested on-device. Headless Linux Zotero exercises Gecko windows and the item database, but cannot verify OS-specific display behavior.
+
+**All five XHTML interaction scenarios passed in Chromium 151.0.7922.34, with zero page errors.** [Validation run](https://github.com/Kazuma-yj/perprint-bridge/actions/runs/36443503269) · [Browser report](tests/ui-results-1.2.0.json). These browser results are from 1.2.0; its UI assets are unchanged in 1.2.1. The suite remains a CI release gate, alongside the new real Zotero smoke test. It renders the actual packaged UI with a fixture controller; this is distinct from testing the Zotero desktop application.
 
 Menu tests cover a preprint, an accepted conference item, a PMLR record, another conference record, a journal, multiple selections and read-only records. The same main commands remain visible; manual transfer is consistently under Advanced. Batch CCF tests cover mixed selections, unchanged and ambiguous entries, failed saves, cancelled confirmation, concurrent edits and disabling. API contracts were checked against Zotero 10.0.3's official MenuManager and URL-launching source.
 
 以下是各样本的具体结果与测试范围。
+
+## 1.2.1 白屏回归
+
+已在官方 Linux Zotero 10.0.3 中安装原始 1.2.0 XPI，复现标题为空、队列为 0 的 `about:blank` 原生窗口。
+1.2.1 注册 `chrome://preprint-bridge/content/review.xhtml` 后，真实 XPI 通过以下检查：
+
+- 插件包已实际安装、启用，窗口使用系统权限加载正确的 chrome 地址。
+- 标题、队列、字段差异可见；真实 Zotero 条目的 clone 支持预览。
+- 点击勾选与更新后，真实测试数据库保存出版信息。
+- 条目 key、作者与子笔记保留；撤销恢复原条目类型及备注。
+- 关闭后可重新打开；禁用会关闭窗口并注销资源，重新启用恢复正常。
+
+测试使用隔离的临时 profile 与数据目录，Crossref 响应使用已有快照。原生截图已人工查看。发布流程新增同样的原生测试，防止浏览器测试通过但 Zotero 窗口打不开。
+另新增启动失败后注销资源与重新启动的自动化测试。
 
 ## 1.2.0 新增测试
 
@@ -68,7 +84,7 @@ node scripts/live-smoke.cjs 2403.06634 10.1038/nature14539
 
 ## 自动回归测试
 
-`npm test`：68 项通过，包括：
+`npm test`：69 项通过，包括：
 
 - 无 arXiv 会议说明时，从官方 ICML 目录查找；排除 GRaM 等工作坊。
 - DBLP 返回 HTTP 200 HTML 时继续检索；429 不触发同源自动重试。
@@ -94,7 +110,7 @@ node scripts/live-smoke.cjs 2403.06634 10.1038/nature14539
 ## 尚需实际客户端验证
 
 运行环境没有 Windows Zotero 10.0.3，不能声称已验证该界面的安装、右键菜单、翻译和重启行为。
-客户端验证应在正常模式下安装/启用 1.2.0，覆盖固定子菜单、灰色命令、停止与继续、单篇/多篇出版更新、手改后主动覆盖、窗口内撤销、批量 CCF、重复启停、重启与检查更新。
+Windows/macOS 客户端验证应在正常模式下安装/启用 1.2.1，覆盖固定子菜单、灰色命令、停止与继续、单篇/多篇出版更新、手改后主动覆盖、窗口内撤销、批量 CCF、重复启停、重启与检查更新。
 
 0.1.4 和 0.1.5 的 XPI 均包含 `shutdown`。Zotero 10.0.3 的加载器在找不到插件作用域/回调时也会输出同一句
 `missing bootstrap method`。日志同时存在 `safeMode => true`，因此未将这条警告归因于函数缺失，也未声称警告已完全消除。

@@ -3,9 +3,9 @@
     "preprint-bridge@research.local": {
       "updates": [
         {
-          "version": "1.2.0",
-          "update_link": "https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/dist/preprint-bridge-1.2.0.xpi",
-          "update_hash": "sha256:27989a22c83eda0c064b6a74c2d0808efce0c638b3f545d0d60f798bb81c0eb3",
+          "version": "1.2.1",
+          "update_link": "https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/dist/preprint-bridge-1.2.1.xpi",
+          "update_hash": "sha256:4acbc2e36535e5f2fed8d267f603f8f5afbd318ffdf01e3a5ecfae03fb6a1af9",
           "applications": {
             "zotero": {
               "strict_min_version": "10.0",

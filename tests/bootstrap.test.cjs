@@ -8,6 +8,18 @@ const root = path.join(__dirname, '..');
 
 test('Zotero 10 startup loads the plugin and registers menus; shutdown removes them', async () => {
   const menus = new Map();
+  const chrome = new Set();
+  let registrations = 0, destructions = 0;
+  const Cc = { '@mozilla.org/addons/addon-manager-startup;1': { getService() {
+    return { registerChrome(uri, resources) {
+      assert.equal(uri, 'file:///plugin/manifest.json');
+      assert.deepEqual(JSON.parse(JSON.stringify(resources)), [['content', 'preprint-bridge', 'content/']]);
+      assert.equal(chrome.size, 0, 'old registration must be released first');
+      registrations++;
+      const handle = { destruct() { assert.equal(chrome.delete(handle), true); destructions++; } };
+      chrome.add(handle); return handle;
+    } };
+  } } };
   let removedFTL = false;
   const window = {
     MozXULElement: { insertFTLIfNeeded(file) { assert.equal(file, 'preprint-bridge.ftl'); } },
@@ -33,12 +45,12 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
     },
     debug() {}
   };
-  const Services = { scriptloader: { loadSubScript(uri, target) {
+  const Services = { io: { newURI: uri => uri }, scriptloader: { loadSubScript(uri, target) {
     const relative = uri.replace('file:///plugin/', '');
     assert.ok(['content/core.js', 'content/ccf-data.js', 'content/ccf.js', 'content/review-model.js', 'content/plugin.js'].includes(relative));
     vm.runInContext(fs.readFileSync(path.join(root, relative), 'utf8'), vm.createContext(target));
   } } };
-  const sandbox = vm.createContext({ Zotero, Services, URL, APP_SHUTDOWN: 99 });
+  const sandbox = vm.createContext({ Zotero, Services, Cc, Ci: { amIAddonManagerStartup: 'startup' }, URL, APP_SHUTDOWN: 99 });
   vm.runInContext(fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8'), sandbox);
   // Zotero resolves these names on the bootstrap global, including before
   // startup. The reported missing-shutdown warning must not be caused by
@@ -62,6 +74,9 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
   vm.runInContext('shutdown({}, 0)', sandbox);
   assert.equal(menus.size, 0);
   assert.equal(removedFTL, true);
+  assert.equal(chrome.size, 0);
+  assert.equal(registrations, 3);
+  assert.equal(destructions, 3);
 });
 
 test('disabling while Zotero initializes cancels the pending startup', async () => {
@@ -78,4 +93,21 @@ test('disabling while Zotero initializes cancels the pending startup', async () 
   await pending;
   assert.equal(loads, 0);
   assert.equal(sandbox.PreprintBridge, undefined);
+});
+
+test('failed startup releases chrome registration and a later startup can retry', async () => {
+  let registrations = 0, destructions = 0;
+  const sandbox = vm.createContext({ URL, APP_SHUTDOWN: 99, Ci: {},
+    Cc: { '@mozilla.org/addons/addon-manager-startup;1': { getService() { return {
+      registerChrome() { registrations++; return { destruct() { destructions++; } }; }
+    }; } } },
+    Zotero: { initializationPromise: Promise.resolve(), getMainWindows: () => [], debug() {} },
+    Services: { io: { newURI: uri => uri }, scriptloader: { loadSubScript() { throw Error('Bad script'); } } }
+  });
+  vm.runInContext(fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8'), sandbox);
+  for (let i = 1; i <= 2; i++) {
+    await assert.rejects(sandbox.startup({ rootURI: 'file:///plugin/' }), /Bad script/);
+    assert.equal(registrations, i); assert.equal(destructions, i);
+    assert.equal(sandbox.PreprintBridge, undefined); assert.equal(sandbox.chromeHandle, undefined);
+  }
 });

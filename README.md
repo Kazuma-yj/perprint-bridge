@@ -2,7 +2,7 @@
 
 **Find published versions, update publication information and check CCF ratings while keeping your Zotero annotations.**
 
-[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.2.0.md)
+[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.2.1.md)
 
 Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the conference or journal version of a preprint and refresh existing publication records. Review the metadata, then update your existing item after confirmation. Your item identity, attachments, annotations, notes, tags, and collection membership stay in place.
 
@@ -19,13 +19,13 @@ Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the confere
 
 ## Install
 
-1. Download **`preprint-bridge-1.2.0.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
+1. Download **`preprint-bridge-1.2.1.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File…** from the gear menu and select the XPI.
 3. Restart Zotero normally and enable Preprint Bridge if needed.
 
 Existing installations using this repository's update feed can update through Zotero's plugin update check. Very old builds pointing to `example.com` need one manual installation. Zotero must be able to reach GitHub to download updates.
 
-**Compatibility:** Zotero 10.0.x. Zotero 7/8/9 and Zotero 11 are outside the current compatibility range. This release has automated tests and real-service metadata checks; a full desktop UI test on Windows, macOS and Linux has not been completed. See [validation details](TESTING.md).
+**Compatibility:** Zotero 10.0.x. Zotero 7/8/9 and Zotero 11 are outside the current compatibility range. This release has automated tests and an actual-XPI smoke test in official Linux Zotero 10.0.3, including window rendering, database writes, undo and plugin lifecycle. Windows and macOS have not been tested on-device. See [validation details](TESTING.md).
 
 ## Use
 

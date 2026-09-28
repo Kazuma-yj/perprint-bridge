@@ -174,8 +174,8 @@ test('changing a candidate resets selection and displays that candidate’s chan
 
 test('closing or disabling cancels search and prevents later writes; reopening uses a new window', async () => {
   const env = harness(), item = env.item(1);
-  env.plugin.configure({ rootURI: 'jar:file:///plugin.xpi!/' }); env.plugin.openReview([item]);
-  const first = env.windows[0]; assert.equal(first.url, 'jar:file:///plugin.xpi!/content/review.xhtml');
+  env.plugin.openReview([item]);
+  const first = env.windows[0]; assert.equal(first.url, 'chrome://preprint-bridge/content/review.xhtml');
   env.plugin.openReview([item, env.item(2)]); assert.equal(env.windows.length, 1); assert.equal(first.focused, 1);
   const queue = first.controller.session;
   // openReview appends and starts scanning asynchronously

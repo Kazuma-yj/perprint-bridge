@@ -44,6 +44,22 @@ untrusted title text, both languages and a narrow dark viewport. It does not
 emulate Zotero's chrome privileges, menus or item database. CI runs this check
 before the release job and uploads its report and screenshots.
 
+The real Zotero smoke test installs the exact release XPI and a test-only
+companion into a disposable profile. It creates and updates test items in a
+separate data directory; it never opens the user's profile. Download the
+official Linux Zotero 10.0.3 archive, extract it, and run:
+
+```sh
+MOZ_HEADLESS=1 python3 scripts/zotero-smoke.py /path/to/Zotero_linux-x86_64/zotero dist/preprint-bridge-1.2.1.xpi zotero-results/current
+MOZ_HEADLESS=1 python3 scripts/zotero-smoke.py /path/to/Zotero_linux-x86_64/zotero dist/preprint-bridge-1.2.0.xpi zotero-results/old --expect-blank
+```
+
+This invokes the installed plugin's registered menu command and real Gecko
+window, then checks preview, database writes, undo and disable/enable. Crossref
+metadata is a fixture, so it is not a live source-availability check. The
+companion is never packaged in the distributed plugin. CI runs both cases
+before publishing, and uploads native screenshots and result JSON.
+
 The optional integration check contacts public services:
 
 ```sh

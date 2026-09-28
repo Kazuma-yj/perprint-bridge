@@ -2,7 +2,7 @@
 
 **核对论文发表信息与 CCF 评级，保留你在 Zotero 中的附件与批注。**
 
-[English](README.md) · [下载安装](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [反馈问题](https://github.com/Kazuma-yj/perprint-bridge/issues) · [版本说明](releases/1.2.0.md)
+[English](README.md) · [下载安装](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [反馈问题](https://github.com/Kazuma-yj/perprint-bridge/issues) · [版本说明](releases/1.2.1.md)
 
 Preprint Bridge 是一个面向 **Zotero 10.0.x** 的插件。它帮助你查找预印本对应的正式会议论文或期刊文章，也支持核对已有发表条目的信息。在你确认后更新原条目，同时保留条目 ID、附件、批注、笔记、标签与所属分类。
 
@@ -19,13 +19,13 @@ Preprint Bridge 是一个面向 **Zotero 10.0.x** 的插件。它帮助你查找
 
 ## 安装
 
-1. 前往 [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest)，下载 **`preprint-bridge-1.2.0.xpi`**。请选择 `.xpi` 安装包，不是 Source code 压缩包。
+1. 前往 [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest)，下载 **`preprint-bridge-1.2.1.xpi`**。请选择 `.xpi` 安装包，不是 Source code 压缩包。
 2. 打开 Zotero 的 **工具 → 插件**，点击齿轮菜单，选择“从文件安装插件”，打开下载的 XPI。
 3. 正常重启 Zotero，确认 Preprint Bridge 已启用。
 
 已经使用本仓库更新地址的版本，可通过 Zotero 的插件更新检查升级。更新地址仍为 `example.com` 的早期版本，需要手动安装一次。自动更新需要能够访问 GitHub。
 
-**兼容范围：Zotero 10.0.x。** 当前清单不支持 Zotero 7/8/9 或 Zotero 11。本版已进行自动化测试和真实服务元数据检查，但尚未完成 Windows、macOS、Linux 上的完整桌面界面验证。详见[测试记录](TESTING.md)。
+**兼容范围：Zotero 10.0.x。** 当前清单不支持 Zotero 7/8/9 或 Zotero 11。本版已进行自动化测试，并在官方 Linux Zotero 10.0.3 中安装真实 XPI，验证窗口显示、数据库保存、撤销与插件启停。Windows 和 macOS 尚未实机验证。详见[测试记录](TESTING.md)。
 
 ## 使用
 

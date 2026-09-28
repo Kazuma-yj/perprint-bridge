@@ -6,7 +6,7 @@ var PreprintBridge = (() => {
   const discoveryCache = new Map();
   const progressWindows = new Set();
   let generation = 0;
-  let rootURI = "", reviewWindow = null, reviewSession = null;
+  let reviewWindow = null, reviewSession = null;
   const zh = () => String(Zotero.locale || "").toLowerCase().startsWith("zh");
   const message = (cn, en) => zh() ? cn : en;
   const win = () => Zotero.getMainWindow();
@@ -295,7 +295,7 @@ var PreprintBridge = (() => {
     const session = createReview(items);
     reviewSession = session;
     try {
-      reviewWindow = win().openDialog(rootURI + "content/review.xhtml", "_blank",
+      reviewWindow = win().openDialog("chrome://preprint-bridge/content/review.xhtml", "_blank",
         "chrome,centerscreen,resizable,dialog=no,width=1060,height=720", {
           session, locale: Zotero.locale,
           fieldLabel(field) { return Zotero.ItemFields.getLocalizedString(field); },
@@ -542,7 +542,5 @@ var PreprintBridge = (() => {
     for (const progress of [...progressWindows]) closeProgress(progress);
     for (const id of menus.splice(0)) Zotero.MenuManager.unregisterMenu(id);
   }
-  return { start, stop, checkItem, apply, updateCCF, openArxiv, menuState, preview, createReview, openReview,
-    configure(options) { rootURI = options.rootURI; }
-  };
+  return { start, stop, checkItem, apply, updateCCF, openArxiv, menuState, preview, createReview, openReview };
 })();

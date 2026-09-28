@@ -1,0 +1,70 @@
+{
+  "checkedAt": "2026-09-28",
+  "platform": "Linux, official Zotero 10.0.3, MOZ_HEADLESS=1",
+  "metadata": "Recorded Crossref fixture; no live publication requests",
+  "oldVersion": {
+    "zoteroVersion": "10.0.3",
+    "expectBlank": true,
+    "checks": [
+      "release XPI is installed and active",
+      "plugin loaded from the actual XPI",
+      "1.2.0 reproduces the blank native window"
+    ],
+    "pluginVersion": "1.2.0",
+    "packageURI": "jar:file:///<disposable-test-profile>/extensions/preprint-bridge@research.local.xpi!/",
+    "initialWindow": {
+      "uri": "about:blank",
+      "title": "",
+      "rows": 0,
+      "text": ""
+    },
+    "passed": true
+  },
+  "fixedVersion": {
+    "zoteroVersion": "10.0.3",
+    "expectBlank": false,
+    "checks": [
+      "release XPI is installed and active",
+      "plugin loaded from the actual XPI",
+      "registered chrome document loaded",
+      "review window has the required system principal",
+      "window title is set",
+      "heading has visible layout",
+      "real Zotero item clone produces an update preview",
+      "field differences rendered in Gecko",
+      "selecting a row enables update",
+      "update saved in the real Zotero database",
+      "published fields are correct",
+      "identity, child note and authors are retained",
+      "undo restores the real item",
+      "review window reopens after closing",
+      "disable unregisters chrome resources",
+      "disable/re-enable registers a working window again"
+    ],
+    "pluginVersion": "1.2.1",
+    "packageURI": "jar:file:///<disposable-test-profile>/extensions/preprint-bridge@research.local.xpi!/",
+    "initialWindow": {
+      "uri": "chrome://preprint-bridge/content/review.xhtml",
+      "title": "Preprint Bridge",
+      "heading": "Review publication information",
+      "rows": 1,
+      "text": "\n\n  \n  Preprint Bridge\n  \n  \n\n\n  \n    PREPRINT BRIDGEReview publication informationReview the changes, then choose which papers to update.\n    Continue / retry unfinished\n    Stop queue\n  \n  Review results · Checked 1/1 · Selected 0 · Updated 0Select all publications\n  \n    PAPERS IN THIS SESSIONRandom ForestsPublication found\n    Publication foundRandom ForestsSource: Crossref · 2001Machine LearningMatch basis: normalized title and first author agree.https://doi.org/10.1023%2Fa%3A1010933404324CCF (2026): BProposed field changesFieldBeforeAfterItem typePreprintJournal articleURLhttps://example.invalid/test-preprinthttps://doi.org/10.1023%2Fa%3A1010933404324ExtraKeep this test noteKeep this test note\nCCF (2026): BPublished—2001Library catalog—CrossrefVolume—45Pages—5-32Journal—Machine LearningView source checksCrossref DOI: found\n  \n  \n    Updates publication fields on the original item. Authors, PDFs and annotations stay in place.Undo is available until this window closes. Manual edits can be overwritten after reviewing the differences.\n    Undo this window’s updatesUpdate 0 selected\n  \n\n"
+    },
+    "afterLookup": {
+      "uri": "chrome://preprint-bridge/content/review.xhtml",
+      "title": "Preprint Bridge",
+      "heading": "Review publication information",
+      "rows": 1,
+      "text": "\n\n  \n  Preprint Bridge\n  \n  \n\n\n  \n    PREPRINT BRIDGEReview publication informationReview the changes, then choose which papers to update.\n    Continue / retry unfinished\n    Stop queue\n  \n  Review results · Checked 1/1 · Selected 0 · Updated 0Select all publications\n  \n    PAPERS IN THIS SESSIONRandom ForestsPublication found\n    Publication foundRandom ForestsSource: Crossref · 2001Machine LearningMatch basis: normalized title and first author agree.https://doi.org/10.1023%2Fa%3A1010933404324CCF (2026): BProposed field changesFieldBeforeAfterItem typePreprintJournal articleURLhttps://example.invalid/test-preprinthttps://doi.org/10.1023%2Fa%3A1010933404324ExtraKeep this test noteKeep this test note\nCCF (2026): BPublished—2001Library catalog—CrossrefVolume—45Pages—5-32Journal—Machine LearningView source checksCrossref DOI: found\n  \n  \n    Updates publication fields on the original item. Authors, PDFs and annotations stay in place.Undo is available until this window closes. Manual edits can be overwritten after reviewing the differences.\n    Undo this window’s updatesUpdate 0 selected\n  \n\n"
+    },
+    "finalWindow": {
+      "uri": "chrome://preprint-bridge/content/review.xhtml",
+      "title": "Preprint Bridge",
+      "heading": "Review publication information",
+      "rows": 1,
+      "text": "\n\n  \n  Preprint Bridge\n  \n  \n\n\n  \n    PREPRINT BRIDGEReview publication informationReview the changes, then choose which papers to update.\n    Continue / retry unfinished\n    Stop queue\n  \n  Review results · Checked 1/1 · Selected 0 · Updated 0Select all publications\n  \n    PAPERS IN THIS SESSIONRandom ForestsPublication found\n    Publication foundRandom ForestsSource: Crossref · 2001Machine LearningMatch basis: normalized title and first author agree.https://doi.org/10.1023%2Fa%3A1010933404324CCF (2026): BProposed field changesFieldBeforeAfterItem typePreprintJournal articleURLhttps://example.invalid/test-preprinthttps://doi.org/10.1023%2Fa%3A1010933404324ExtraKeep this test noteKeep this test note\nCCF (2026): BPublished—2001Library catalog—CrossrefVolume—45Pages—5-32Journal—Machine LearningView source checksCrossref DOI: found\n  \n  \n    Updates publication fields on the original item. Authors, PDFs and annotations stay in place.Undo is available until this window closes. Manual edits can be overwritten after reviewing the differences.\n    Undo this window’s updatesUpdate 0 selected\n  \n\n"
+    },
+    "screenshotError": null,
+    "passed": true
+  }
+}

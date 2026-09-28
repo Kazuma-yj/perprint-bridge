@@ -9,3 +9,5 @@ __pycache__/
 !dist/preprint-bridge-1.2.0.xpi
 node_modules/
 ui-results/
+!dist/preprint-bridge-1.2.1.xpi
+zotero-results/
