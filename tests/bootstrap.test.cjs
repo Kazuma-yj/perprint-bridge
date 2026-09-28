@@ -35,7 +35,7 @@ test('Zotero 10 startup loads the plugin and registers menus; shutdown removes t
   };
   const Services = { scriptloader: { loadSubScript(uri, target) {
     const relative = uri.replace('file:///plugin/', '');
-    assert.ok(['content/core.js', 'content/ccf-data.js', 'content/ccf.js', 'content/plugin.js'].includes(relative));
+    assert.ok(['content/core.js', 'content/ccf-data.js', 'content/ccf.js', 'content/review-model.js', 'content/plugin.js'].includes(relative));
     vm.runInContext(fs.readFileSync(path.join(root, relative), 'utf8'), vm.createContext(target));
   } } };
   const sandbox = vm.createContext({ Zotero, Services, URL, APP_SHUTDOWN: 99 });

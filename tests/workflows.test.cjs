@@ -66,8 +66,8 @@ test('one fixed submenu exposes identical commands for preprints, accepted, PMLR
   const root = menus[0].menus[0];
   assert.equal(root.menuType, 'submenu');
   assert.deepEqual(Array.from(root.menus, menu => menu.l10nID || menu.menuType), [
-    'preprint-bridge-review', 'preprint-bridge-ccf', 'preprint-bridge-copy',
-    'preprint-bridge-arxiv', 'separator', 'preprint-bridge-help'
+    'preprint-bridge-review', 'preprint-bridge-ccf', 'preprint-bridge-arxiv',
+    'preprint-bridge-advanced', 'separator', 'preprint-bridge-help'
   ]);
   for (const item of papers) {
     assert.equal(state(root, [item]).visible, true);
@@ -87,14 +87,14 @@ test('one fixed submenu exposes identical commands for preprints, accepted, PMLR
 test('multi-selection and read-only items change enabled state, not menu names or visibility', () => {
   const { plugin, menus } = setup(); plugin.start();
   const children = menus[0].menus[0].menus;
-  assert.equal(state(children[0], [papers[0], papers[2]]).enabled, false);
+  assert.equal(state(children[0], [papers[0], papers[2]]).enabled, true);
   assert.equal(state(children[1], [papers[0], papers[2]]).enabled, true);
-  assert.equal(state(children[2], [papers[0], papers[2]]).enabled, true);
-  assert.equal(state(children[2], [papers[2], papers[3]]).enabled, false);
+  assert.equal(state(children[3].menus[0], [papers[0], papers[2]]).enabled, true);
+  assert.equal(state(children[3].menus[0], [papers[2], papers[3]]).enabled, false);
   const readonly = record(7, 'conferencePaper', { extra: 'arXiv: 2403.06634' }, { readonly: true });
   assert.equal(state(children[0], [readonly]).enabled, false);
   assert.equal(state(children[1], [readonly]).enabled, false);
-  assert.equal(state(children[3], [readonly]).enabled, true);
+  assert.equal(state(children[2], [readonly]).enabled, true);
   assert.equal(state(children[5], [readonly]).enabled, true);
   for (const child of children) assert.equal(state(child, [readonly]).visible, true);
 });

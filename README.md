@@ -2,7 +2,7 @@
 
 **Find published versions, update publication information and check CCF ratings while keeping your Zotero annotations.**
 
-[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.1.0.md)
+[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.2.0.md)
 
 Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the conference or journal version of a preprint and refresh existing publication records. Review the metadata, then update your existing item after confirmation. Your item identity, attachments, annotations, notes, tags, and collection membership stay in place.
 
@@ -12,13 +12,14 @@ Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the confere
 - **Complete publication information:** fill in the proceedings or journal title, publication date, DOI, pages and volume when available. Recognized conferences include a full name, abbreviation and year, such as `(ICML 2024)` or `(KDD 2026)`.
 - **CCF rankings, including batch updates:** match existing conference or journal names locally and update the 2026 grade in Extra. Journals without abbreviations can match by full name. The bundled dataset covers part of the directory; uncertain matches stay unranked.
 - **Acceptance tracking:** explicit arXiv acceptance notes can be saved as provisional metadata and checked again after proceedings are published.
-- **Manual metadata transfer:** copy publication fields from an official record you have already imported into Zotero.
+- **Batch review and field differences:** queue several papers, compare before/after values in one window, then update only selected records. Stop, continue or retry unfinished items.
+- **Undo within the review window:** restore this session’s publication updates. Later manual edits are protected by default, with an explicit overwrite option after reviewing differences.
 - **Return to arXiv:** open the original preprint page after the item's URL has been updated to the published version.
-- **One consistent Chinese/English menu** for all paper types, with a search progress indicator and clear feedback when a source is unavailable.
+- **One consistent Chinese/English menu** for all paper types, with distinct states for publication records, acceptance notes, unavailable sources and no match.
 
 ## Install
 
-1. Download **`preprint-bridge-1.1.0.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
+1. Download **`preprint-bridge-1.2.0.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File…** from the gear menu and select the XPI.
 3. Restart Zotero normally and enable Preprint Bridge if needed.
 
@@ -32,17 +33,17 @@ Right-click a bibliographic parent item and open **Preprint Bridge**. Its comman
 
 | Command | Selection |
 | --- | --- |
-| Review and update publication… | One preprint, conference paper or journal article |
+| Review and update publication… | One or more preprints, conference papers or journal articles |
 | Update CCF rating… | One or more conference papers or journal articles |
-| Copy published metadata to preprint… | One preprint or pending item plus one published record |
+| Advanced → Complete from an imported record… | Fallback: one preprint or pending item plus an imported publication |
 | Open arXiv preprint | One item containing an arXiv identifier |
 | How to use | Read the command explanations |
 
 ### Review a preprint or an existing publication
 
-Choose **Preprint Bridge → Review and update publication…**. Review the title, venue, date and source link before confirming. Select the bibliographic item, not its PDF attachment. The same command handles different publication sources automatically.
+Choose **Preprint Bridge → Review and update publication…**. Compare each paper’s source and before/after fields, select the records you want to change, then click **Update N selected**. Select the bibliographic item, not its PDF attachment. The same command handles different publication sources automatically.
 
-A title and first author are required. An arXiv identifier such as `2403.06634` in URL, DOI or Extra helps find the published version, but is not required for title-based searches. An existing publication DOI is checked directly; fallback results cannot substitute a different DOI. Publication review processes one item at a time.
+A title and first author are required. An arXiv identifier such as `2403.06634` in URL, DOI or Extra helps find the published version, but is not required for title-based searches. An existing publication DOI is checked directly; fallback results cannot substitute a different DOI. Multiple papers are checked sequentially; a failed item does not stop the queue. Stopping or closing the window does not undo already saved changes.
 
 The available fields depend on the publication type and source:
 
@@ -62,9 +63,19 @@ CCF (2026): A (ICML)
 
 An acceptance-only result also includes `Publication status: Accepted; proceedings pending`. It keeps the arXiv link and does not invent a publisher DOI.
 
+### Batch review, overwriting and undo
+
+- Nothing is selected by default. **Select all publications** includes only formal records with field changes; acceptance-only records require individual selection.
+- **Publication found** means normalized title and first author matched. **Acceptance note only** means the evidence is the author’s arXiv note, without a publication record. These describe evidence, not confidence scores.
+- Successful updates appear inline: “Publication information updated. The author list and PDFs are unchanged.” No warning-style success alert is shown.
+- If you edit an item after lookup, choose **Review changes against current data…**, inspect the current/proposed values, then select it again to overwrite. Manual edits are not permanently locked.
+- **Undo this window’s updates** restores the state before these saves. Later manual edits are kept by default; **Review later edits and undo…** lets you confirm and overwrite them.
+- **Undo history lasts only until this window closes.** It covers publication updates made in this window, not the separate CCF or advanced manual-transfer commands.
+- Stop waits for the active request or save to finish, then stops subsequent operations. Continuing/retrying retains completed results.
+
 ### When automatic lookup cannot match
 
-Import the official publication with Zotero Connector. Select **both** the original preprint and the imported conference paper or journal article, then choose **Preprint Bridge → Copy published metadata to preprint…**. Review the result; different titles require an additional confirmation. Both items remain so you can decide whether to remove the duplicate.
+This advanced fallback is for unindexed publications or substantive title changes; ordinary automatic lookup does not need it. Import the official publication with Zotero Connector. Select **both** the original preprint and the imported conference paper or journal article, then choose **Preprint Bridge → Advanced → Complete from an imported record…**. Review the result; different titles require an additional confirmation. Both items remain so you can decide whether to remove the duplicate.
 
 ### Update CCF ratings for existing papers
 
@@ -105,7 +116,7 @@ CCF matching runs locally. Some public directory data is cached temporarily in m
 | No Preprint Bridge menu | Enable the plugin, leave Zotero safe mode, and select a bibliographic parent item. |
 | A command is greyed out | Check the selection requirements above and whether the item is editable or already being processed. Open How to use for details. |
 | First author is missing | Complete the item's author field or use the manual two-item command. |
-| Search takes a while | Several sources or larger proceedings indexes may need to be checked. A progress notification is shown. |
+| Search takes a while | Several sources or larger proceedings indexes may need to be checked. The review window shows queue progress and lets you stop or continue. |
 | “Search incomplete” / HTML instead of JSON | A service returned an error or verification page. Try later, or import the official record and use manual transfer. |
 | No CCF grade | The venue may be unlisted, missing from the bundled subset, or ambiguous. Check the official directory. |
 | Update fails | Check GitHub connectivity; install the latest release XPI manually if necessary. |

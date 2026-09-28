@@ -7,6 +7,7 @@ Please remove private information. Do not upload your Zotero database.
 ## Local development
 
 Use Node.js 18+ (CI uses 24) and Python 3. No npm packages are required.
+Browser interaction tests additionally use Playwright 1.62.1 and Chromium.
 
 ```sh
 npm test
@@ -28,6 +29,20 @@ Inspect the item and its attachments before and after writing.
 
 Unit tests use Node's test runner and mocked Zotero objects. Real bibliographic
 fixtures are in `tests/fixtures/`. They do not replace desktop UI testing.
+
+Run the packaged XHTML review-window interaction tests:
+
+```sh
+npm install --no-save --package-lock=false playwright@1.62.1
+npx playwright install --with-deps chromium
+UI_SCREENSHOT_DIR=ui-results node tests/review-ui.browser.cjs
+```
+
+The test serves the actual XHTML, CSS and UI script on localhost with a fixture
+controller. It covers selection, success, stop/retry, undo, explicit overwrite,
+untrusted title text, both languages and a narrow dark viewport. It does not
+emulate Zotero's chrome privileges, menus or item database. CI runs this check
+before the release job and uploads its report and screenshots.
 
 The optional integration check contacts public services:
 

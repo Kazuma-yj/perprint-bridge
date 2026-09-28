@@ -11,6 +11,21 @@ jobs:
         with:
           node-version: '24'
       - run: npm test
+      - name: Install browser test tools
+        run: |
+          npm install --no-save --package-lock=false playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Exercise the packaged review window
+        env:
+          UI_SCREENSHOT_DIR: ui-results
+        run: |
+          mkdir -p ui-results
+          node tests/review-ui.browser.cjs > ui-results/results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-window-validation
+          path: ui-results/
       - run: python3 scripts/build.py
       - run: python3 scripts/verify_package.py
       - name: Check committed package and update feed

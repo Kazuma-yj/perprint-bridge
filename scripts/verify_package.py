@@ -13,7 +13,7 @@ assert version == json.loads((ROOT / "package.json").read_text())["version"]
 addon = manifest["applications"]["zotero"]
 package = ROOT / "dist" / f"preprint-bridge-{version}.xpi"
 expected = {"manifest.json", "bootstrap.js", "LICENSE", "DATA_SOURCES.md"}
-expected.update(p.relative_to(ROOT).as_posix() for p in (ROOT / "content").rglob("*.js"))
+expected.update(p.relative_to(ROOT).as_posix() for p in (ROOT / "content").rglob("*") if p.suffix in (".js", ".xhtml", ".css"))
 expected.update(p.relative_to(ROOT).as_posix() for p in (ROOT / "locale").rglob("*.ftl"))
 with ZipFile(package) as archive:
     assert len(archive.namelist()) == len(expected) and set(archive.namelist()) == expected

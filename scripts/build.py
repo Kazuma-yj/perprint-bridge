@@ -16,7 +16,7 @@ if MANIFEST["version"] != json.loads((ROOT / "package.json").read_text(encoding=
     raise ValueError("manifest.json and package.json versions differ")
 OUT = ROOT / "dist" / f"preprint-bridge-{MANIFEST['version']}.xpi"
 FILES = [ROOT / name for name in ("manifest.json", "bootstrap.js", "LICENSE", "DATA_SOURCES.md")]
-FILES += sorted((ROOT / "content").rglob("*.js"))
+FILES += sorted(p for p in (ROOT / "content").rglob("*") if p.suffix in (".js", ".xhtml", ".css"))
 FILES += sorted((ROOT / "locale").rglob("*.ftl"))
 OUT.parent.mkdir(exist_ok=True)
 with ZipFile(OUT, "w") as archive:

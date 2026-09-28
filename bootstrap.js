@@ -15,9 +15,11 @@ async function startup({ rootURI }) {
   Services.scriptloader.loadSubScript(rootURI + "content/core.js", scope);
   Services.scriptloader.loadSubScript(rootURI + "content/ccf-data.js", scope);
   Services.scriptloader.loadSubScript(rootURI + "content/ccf.js", scope);
+  Services.scriptloader.loadSubScript(rootURI + "content/review-model.js", scope);
   Services.scriptloader.loadSubScript(rootURI + "content/plugin.js", scope);
   if (!scope.PreprintBridge) throw new Error("Preprint Bridge failed to load");
   PreprintBridge = scope.PreprintBridge;
+  PreprintBridge.configure({ rootURI });
   try {
     for (const window of Zotero.getMainWindows()) onMainWindowLoad({ window });
     PreprintBridge.start();

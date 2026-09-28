@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Preprint Bridge",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Find published versions of arXiv papers, review metadata, and keep your Zotero items and annotations.",
   "homepage_url": "https://github.com/Kazuma-yj/perprint-bridge",
   "author": "Kazuma-yj",

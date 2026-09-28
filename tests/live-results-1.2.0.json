@@ -1,0 +1,636 @@
+{
+  "checkedAt": "2026-09-28T15:20:53.105Z",
+  "pluginVersion": "1.2.0",
+  "requestCounts": {
+    "network": 0,
+    "diskCache": 34,
+    "memoryCache": 0
+  },
+  "cases": [
+    {
+      "doi": "10.1023/A:1010933404324",
+      "title": "Random Forests",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "Crossref",
+          "itemType": "journalArticle",
+          "title": "Random Forests",
+          "venue": "Machine Learning",
+          "year": "2001",
+          "pages": "5-32",
+          "volume": "45",
+          "publisher": "Springer Science and Business Media LLC",
+          "doi": "10.1023/a:1010933404324",
+          "url": "https://doi.org/10.1023%2Fa%3A1010933404324",
+          "authors": [
+            "Leo Breiman"
+          ],
+          "catalog": "Crossref",
+          "ccf": {
+            "acronym": "",
+            "title": "Machine Learning",
+            "grade": "B",
+            "kind": "journal",
+            "area": "人工智能",
+            "page": 53
+          },
+          "appliedFields": {
+            "title": "Random Forests",
+            "url": "https://doi.org/10.1023%2Fa%3A1010933404324",
+            "DOI": "10.1023/a:1010933404324",
+            "conferenceName": "",
+            "extra": "CCF (2026): B",
+            "date": "2001",
+            "libraryCatalog": "Crossref",
+            "pages": "5-32",
+            "volume": "45",
+            "publicationTitle": "Machine Learning"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "Crossref DOI",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "doi": "10.1038/nature14539",
+      "title": "Deep learning",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "Crossref",
+          "itemType": "journalArticle",
+          "title": "Deep learning",
+          "venue": "Nature",
+          "year": "2015",
+          "pages": "436-444",
+          "volume": "521",
+          "publisher": "Springer Science and Business Media LLC",
+          "doi": "10.1038/nature14539",
+          "url": "https://doi.org/10.1038%2Fnature14539",
+          "authors": [
+            "Yann LeCun",
+            "Yoshua Bengio",
+            "Geoffrey Hinton"
+          ],
+          "catalog": "Crossref",
+          "ccf": null,
+          "appliedFields": {
+            "title": "Deep learning",
+            "url": "https://doi.org/10.1038%2Fnature14539",
+            "DOI": "10.1038/nature14539",
+            "conferenceName": "",
+            "extra": "",
+            "date": "2015",
+            "libraryCatalog": "Crossref",
+            "pages": "436-444",
+            "volume": "521",
+            "publicationTitle": "Nature"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "Crossref DOI",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "doi": "10.18653/v1/N19-1423",
+      "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "Crossref",
+          "itemType": "conferencePaper",
+          "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+          "venue": "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)",
+          "year": "2019",
+          "pages": "4171-4186",
+          "volume": "",
+          "publisher": "Association for Computational Linguistics",
+          "doi": "10.18653/v1/n19-1423",
+          "url": "https://doi.org/10.18653%2Fv1%2Fn19-1423",
+          "authors": [
+            "Jacob Devlin",
+            "Ming-Wei Chang",
+            "Kenton Lee",
+            "Kristina Toutanova"
+          ],
+          "catalog": "Crossref",
+          "ccf": null,
+          "appliedFields": {
+            "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+            "url": "https://doi.org/10.18653%2Fv1%2Fn19-1423",
+            "DOI": "10.18653/v1/n19-1423",
+            "conferenceName": "North American Chapter of the Association for Computational Linguistics (NAACL 2019)",
+            "extra": "CCF (2026): B (NAACL)",
+            "date": "2019",
+            "libraryCatalog": "Crossref",
+            "pages": "4171-4186",
+            "proceedingsTitle": "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)",
+            "publisher": "Association for Computational Linguistics"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "Crossref DOI",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "arxivId": "2403.06634",
+      "title": "Stealing Part of a Production Language Model",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "PMLR",
+          "itemType": "conferencePaper",
+          "title": "Stealing part of a production language model",
+          "venue": "Proceedings of the 41st International Conference on Machine Learning",
+          "conferenceName": "41st International Conference on Machine Learning",
+          "year": "2024",
+          "date": "2024-07-08",
+          "pages": "5680-5705",
+          "volume": "235",
+          "series": "Proceedings of Machine Learning Research",
+          "publisher": "PMLR",
+          "url": "https://proceedings.mlr.press/v235/carlini24a.html",
+          "catalog": "Proceedings of Machine Learning Research",
+          "pdfURL": "https://raw.githubusercontent.com/mlresearch/v235/main/assets/carlini24a/carlini24a.pdf",
+          "authors": [
+            "Nicholas Carlini",
+            "Daniel Paleka",
+            "Krishnamurthy Dj Dvijotham",
+            "Thomas Steinke",
+            "Jonathan Hayase",
+            "A. Feder Cooper",
+            "Katherine Lee",
+            "Matthew Jagielski",
+            "Milad Nasr",
+            "Arthur Conmy",
+            "Eric Wallace",
+            "David Rolnick",
+            "Florian Tramèr"
+          ],
+          "ccf": {
+            "acronym": "ICML",
+            "title": "International Conference on Machine Learning",
+            "grade": "A",
+            "kind": "conference",
+            "area": "人工智能",
+            "page": 57
+          },
+          "appliedFields": {
+            "title": "Stealing part of a production language model",
+            "url": "https://proceedings.mlr.press/v235/carlini24a.html",
+            "DOI": "",
+            "conferenceName": "41st International Conference on Machine Learning (ICML 2024)",
+            "extra": "arXiv: 2403.06634\nCCF (2026): A (ICML)",
+            "date": "2024-07-08",
+            "libraryCatalog": "Proceedings of Machine Learning Research",
+            "accessDate": "",
+            "pages": "5680-5705",
+            "volume": "235",
+            "proceedingsTitle": "Proceedings of the 41st International Conference on Machine Learning",
+            "series": "Proceedings of Machine Learning Research",
+            "publisher": "PMLR"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "DBLP",
+          "outcome": "error",
+          "detail": "DBLP returned HTML instead of JSON (possible bot check or proxy page)"
+        },
+        {
+          "source": "DBLP SPARQL",
+          "outcome": "not_found"
+        },
+        {
+          "source": "Crossref",
+          "outcome": "not_found"
+        },
+        {
+          "source": "PMLR (ICML 2024)",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "arxivId": "2405.07987",
+      "title": "The Platonic Representation Hypothesis",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "PMLR",
+          "itemType": "conferencePaper",
+          "title": "Position: The Platonic Representation Hypothesis",
+          "venue": "Proceedings of the 41st International Conference on Machine Learning",
+          "conferenceName": "41st International Conference on Machine Learning",
+          "year": "2024",
+          "date": "2024-07-08",
+          "pages": "20617-20642",
+          "volume": "235",
+          "series": "Proceedings of Machine Learning Research",
+          "publisher": "PMLR",
+          "url": "https://proceedings.mlr.press/v235/huh24a.html",
+          "catalog": "Proceedings of Machine Learning Research",
+          "pdfURL": "https://raw.githubusercontent.com/mlresearch/v235/main/assets/huh24a/huh24a.pdf",
+          "authors": [
+            "Minyoung Huh",
+            "Brian Cheung",
+            "Tongzhou Wang",
+            "Phillip Isola"
+          ],
+          "ccf": {
+            "acronym": "ICML",
+            "title": "International Conference on Machine Learning",
+            "grade": "A",
+            "kind": "conference",
+            "area": "人工智能",
+            "page": 57
+          },
+          "appliedFields": {
+            "title": "Position: The Platonic Representation Hypothesis",
+            "url": "https://proceedings.mlr.press/v235/huh24a.html",
+            "DOI": "",
+            "conferenceName": "41st International Conference on Machine Learning (ICML 2024)",
+            "extra": "arXiv: 2405.07987\nCCF (2026): A (ICML)",
+            "date": "2024-07-08",
+            "libraryCatalog": "Proceedings of Machine Learning Research",
+            "accessDate": "",
+            "pages": "20617-20642",
+            "volume": "235",
+            "proceedingsTitle": "Proceedings of the 41st International Conference on Machine Learning",
+            "series": "Proceedings of Machine Learning Research",
+            "publisher": "PMLR"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "DBLP",
+          "outcome": "error",
+          "detail": "DBLP returned HTML instead of JSON (possible bot check or proxy page)"
+        },
+        {
+          "source": "DBLP SPARQL",
+          "outcome": "found"
+        },
+        {
+          "source": "PMLR",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "arxivId": "2502.07776",
+      "title": "Auditing Prompt Caching in Language Model APIs",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "PMLR",
+          "itemType": "conferencePaper",
+          "title": "Auditing Prompt Caching in Language Model APIs",
+          "venue": "Proceedings of the 42nd International Conference on Machine Learning",
+          "conferenceName": "42nd International Conference on Machine Learning",
+          "year": "2025",
+          "date": "2025-10-06",
+          "pages": "20477-20496",
+          "volume": "267",
+          "series": "Proceedings of Machine Learning Research",
+          "publisher": "PMLR",
+          "url": "https://proceedings.mlr.press/v267/gu25b.html",
+          "catalog": "Proceedings of Machine Learning Research",
+          "pdfURL": "https://raw.githubusercontent.com/mlresearch/v267/main/assets/gu25b/gu25b.pdf",
+          "authors": [
+            "Chenchen Gu",
+            "Xiang Lisa Li",
+            "Rohith Kuditipudi",
+            "Percy Liang",
+            "Tatsunori Hashimoto"
+          ],
+          "ccf": {
+            "acronym": "ICML",
+            "title": "International Conference on Machine Learning",
+            "grade": "A",
+            "kind": "conference",
+            "area": "人工智能",
+            "page": 57
+          },
+          "appliedFields": {
+            "title": "Auditing Prompt Caching in Language Model APIs",
+            "url": "https://proceedings.mlr.press/v267/gu25b.html",
+            "DOI": "",
+            "conferenceName": "42nd International Conference on Machine Learning (ICML 2025)",
+            "extra": "arXiv: 2502.07776\nCCF (2026): A (ICML)",
+            "date": "2025-10-06",
+            "libraryCatalog": "Proceedings of Machine Learning Research",
+            "accessDate": "",
+            "pages": "20477-20496",
+            "volume": "267",
+            "proceedingsTitle": "Proceedings of the 42nd International Conference on Machine Learning",
+            "series": "Proceedings of Machine Learning Research",
+            "publisher": "PMLR"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "PMLR (ICML 2025)",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "arxivId": "2106.09685",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "DBLP SPARQL",
+          "itemType": "conferencePaper",
+          "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+          "venue": "The Tenth International Conference on Learning Representations, ICLR 2022, Virtual Event, April 25-29, 2022",
+          "conferenceName": "ICLR",
+          "year": "2022",
+          "pages": "",
+          "url": "https://openreview.net/forum?id=nZeVKeeFYf9",
+          "doi": "",
+          "catalog": "DBLP",
+          "authors": [
+            "Edward J. Hu"
+          ],
+          "ccf": {
+            "acronym": "ICLR",
+            "title": "International Conference on Learning Representations",
+            "grade": "A",
+            "kind": "conference",
+            "area": "人工智能",
+            "page": 57
+          },
+          "appliedFields": {
+            "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+            "url": "https://openreview.net/forum?id=nZeVKeeFYf9",
+            "DOI": "",
+            "conferenceName": "International Conference on Learning Representations (ICLR 2022)",
+            "extra": "arXiv: 2106.09685\nCCF (2026): A (ICLR)",
+            "date": "2022",
+            "libraryCatalog": "DBLP",
+            "accessDate": "",
+            "proceedingsTitle": "The Tenth International Conference on Learning Representations, ICLR 2022, Virtual Event, April 25-29, 2022"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "DBLP",
+          "outcome": "error",
+          "detail": "DBLP returned HTML instead of JSON (possible bot check or proxy page)"
+        },
+        {
+          "source": "DBLP SPARQL",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "arxivId": "1706.03762",
+      "title": "Attention Is All You Need",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "DBLP SPARQL",
+          "itemType": "conferencePaper",
+          "title": "Attention is All you Need",
+          "venue": "Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA",
+          "conferenceName": "NIPS",
+          "year": "2017",
+          "pages": "5998-6008",
+          "url": "https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html",
+          "doi": "",
+          "catalog": "DBLP",
+          "authors": [
+            "Ashish Vaswani"
+          ],
+          "ccf": {
+            "acronym": "NeurIPS",
+            "title": "Conference on Neural Information Processing Systems",
+            "grade": "A",
+            "kind": "conference",
+            "area": "人工智能",
+            "page": 57
+          },
+          "appliedFields": {
+            "title": "Attention is All you Need",
+            "url": "https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html",
+            "DOI": "",
+            "conferenceName": "Conference on Neural Information Processing Systems (NeurIPS 2017)",
+            "extra": "arXiv: 1706.03762\nCCF (2026): A (NeurIPS)",
+            "date": "2017",
+            "libraryCatalog": "DBLP",
+            "accessDate": "",
+            "pages": "5998-6008",
+            "proceedingsTitle": "Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "DBLP",
+          "outcome": "error",
+          "detail": "DBLP returned HTML instead of JSON (possible bot check or proxy page)"
+        },
+        {
+          "source": "DBLP SPARQL",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "arxivId": "1810.04805",
+      "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "passed": true,
+      "status": "found",
+      "candidates": [
+        {
+          "source": "DBLP SPARQL",
+          "itemType": "conferencePaper",
+          "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+          "venue": "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2019, Minneapolis, MN, USA, June 2-7, 2019, Volume 1 (Long and Short Papers)",
+          "conferenceName": "NAACL-HLT (1)",
+          "year": "2019",
+          "pages": "4171-4186",
+          "url": "https://doi.org/10.18653/V1/N19-1423",
+          "doi": "10.18653/V1/N19-1423",
+          "catalog": "DBLP",
+          "authors": [
+            "Jacob Devlin"
+          ],
+          "ccf": {
+            "acronym": "NAACL",
+            "title": "North American Chapter of the Association for Computational Linguistics",
+            "grade": "B",
+            "kind": "conference",
+            "area": "人工智能",
+            "page": 58
+          },
+          "appliedFields": {
+            "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+            "url": "https://doi.org/10.18653/V1/N19-1423",
+            "DOI": "10.18653/V1/N19-1423",
+            "conferenceName": "North American Chapter of the Association for Computational Linguistics (NAACL 2019)",
+            "extra": "arXiv: 1810.04805\nCCF (2026): B (NAACL)",
+            "date": "2019",
+            "libraryCatalog": "DBLP",
+            "accessDate": "",
+            "pages": "4171-4186",
+            "proceedingsTitle": "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, NAACL-HLT 2019, Minneapolis, MN, USA, June 2-7, 2019, Volume 1 (Long and Short Papers)"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "DBLP",
+          "outcome": "error",
+          "detail": "DBLP returned HTML instead of JSON (possible bot check or proxy page)"
+        },
+        {
+          "source": "DBLP SPARQL",
+          "outcome": "found"
+        }
+      ]
+    },
+    {
+      "arxivId": "2604.21083",
+      "title": "Behavioral Consistency and Transparency Analysis on Large Language Model API Gateways",
+      "passed": true,
+      "status": "accepted",
+      "candidates": [
+        {
+          "source": "arXiv acceptance note",
+          "publicationStatus": "accepted",
+          "itemType": "conferencePaper",
+          "title": "Behavioral Consistency and Transparency Analysis on Large Language Model API Gateways",
+          "venue": "Proceedings of the 2026 ACM Internet Measurement Conference (IMC '26)",
+          "conferenceName": "ACM Internet Measurement Conference (IMC 2026)",
+          "year": "2026",
+          "url": "https://arxiv.org/abs/2604.21083",
+          "catalog": "arXiv",
+          "ccf": {
+            "acronym": "IMC",
+            "title": "ACM Internet Measurement Conference",
+            "grade": "B",
+            "kind": "conference",
+            "area": "计算机网络",
+            "page": 14
+          },
+          "appliedFields": {
+            "title": "Behavioral Consistency and Transparency Analysis on Large Language Model API Gateways",
+            "url": "https://arxiv.org/abs/2604.21083",
+            "DOI": "",
+            "conferenceName": "ACM Internet Measurement Conference (IMC 2026)",
+            "extra": "arXiv: 2604.21083\nCCF (2026): B (IMC)\n出版状态：已录用，待正式出版",
+            "date": "2026",
+            "libraryCatalog": "arXiv",
+            "proceedingsTitle": "Proceedings of the 2026 ACM Internet Measurement Conference (IMC '26)"
+          }
+        }
+      ],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "DBLP",
+          "outcome": "error",
+          "detail": "DBLP returned HTML instead of JSON (possible bot check or proxy page)"
+        },
+        {
+          "source": "DBLP SPARQL",
+          "outcome": "not_found"
+        },
+        {
+          "source": "Crossref",
+          "outcome": "not_found"
+        },
+        {
+          "source": "arXiv acceptance note",
+          "outcome": "accepted"
+        }
+      ]
+    },
+    {
+      "arxivId": "2609.27252",
+      "title": "What Converges in the Platonic Representation Hypothesis? Structure over Geometry",
+      "passed": true,
+      "status": "partial_failure",
+      "candidates": [],
+      "checks": [
+        {
+          "source": "arXiv",
+          "outcome": "checked"
+        },
+        {
+          "source": "DBLP",
+          "outcome": "error",
+          "detail": "DBLP returned HTML instead of JSON (possible bot check or proxy page)"
+        },
+        {
+          "source": "DBLP SPARQL",
+          "outcome": "not_found"
+        },
+        {
+          "source": "Crossref",
+          "outcome": "not_found"
+        },
+        {
+          "source": "PMLR (ICML 2025)",
+          "outcome": "not_found"
+        }
+      ]
+    }
+  ]
+}

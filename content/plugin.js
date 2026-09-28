@@ -1,4 +1,4 @@
-/* global Zotero, Services, PreprintBridgeCore, PreprintBridgeCCF */
+/* global Zotero, Services, PreprintBridgeCore, PreprintBridgeCCF, PreprintBridgeReviewModel */
 var PreprintBridge = (() => {
   const pluginID = "preprint-bridge@research.local";
   const menus = [];
@@ -6,12 +6,21 @@ var PreprintBridge = (() => {
   const discoveryCache = new Map();
   const progressWindows = new Set();
   let generation = 0;
+  let rootURI = "", reviewWindow = null, reviewSession = null;
   const zh = () => String(Zotero.locale || "").toLowerCase().startsWith("zh");
   const message = (cn, en) => zh() ? cn : en;
   const win = () => Zotero.getMainWindow();
   const title = "Preprint Bridge";
   const alert = (text) => Services.prompt.alert(win(), title, text);
   const log = (line) => Zotero.debug("[Preprint Bridge] " + line);
+  function notify(text) {
+    if (typeof Zotero.ProgressWindow !== "function") { log(text); return; }
+    const progress = new Zotero.ProgressWindow({ closeOnClick: true });
+    progress.changeHeadline(title);
+    progress.addDescription(text);
+    progress.show();
+    progress.startCloseTimer(6000);
+  }
   function showProgress() {
     if (typeof Zotero.ProgressWindow !== "function") return null;
     try {
@@ -107,7 +116,7 @@ var PreprintBridge = (() => {
     )).join("\n");
   }
 
-  async function apply(item, candidate, arxivId, { allowTitleChange = false } = {}) {
+  function writeFields(item, candidate, arxivId, { allowTitleChange = false } = {}) {
     if (!editable(item)) throw Error(message("此条目不可编辑，请检查馆藏权限或条目是否已删除。", "This item is not editable. Check library permissions or whether it was deleted."));
     const oldURL = item.getField("url");
     const oldDOI = item.getField("DOI");
@@ -124,12 +133,10 @@ var PreprintBridge = (() => {
     if (!candidate.venue || !candidate.year || !["conferencePaper", "journalArticle"].includes(candidate.itemType)) {
       throw Error(message("正式版本信息缺少刊名、年份或类型。", "Publication metadata is incomplete."));
     }
-    const original = item.toJSON();
     const changedURL = !!oldURL && oldURL !== candidate.url;
     const oldDate = item.getField("date");
     const keepDetailedDate = item.itemType === candidate.itemType && (oldURL === candidate.url || sameDOI) &&
       !candidate.date && /\b(?:19|20)\d{2}\b/.exec(oldDate)?.[0] === String(candidate.year);
-    try {
       if (item.itemType !== candidate.itemType) item.setType(Zotero.ItemTypes.getID(candidate.itemType));
       item.setField("title", candidate.title);
       if (!keepDetailedDate) item.setField("date", candidate.date || candidate.year);
@@ -150,11 +157,154 @@ var PreprintBridge = (() => {
         item.setField("publicationTitle", candidate.venue);
       }
       item.setField("extra", conciseExtra(item.getField("extra"), arxivId, candidate));
+  }
+
+  async function apply(item, candidate, arxivId, options = {}) {
+    const original = item.toJSON();
+    try {
+      writeFields(item, candidate, arxivId, options);
       await item.saveTx();
     } catch (error) {
       // saveTx is transactional; restore unsaved fields in memory as well.
-      try { item.fromJSON(original); } catch (restoreError) { log("Restore failed: " + restoreError); }
+      try { item.fromJSON(original, { strict: true }); } catch (restoreError) { log("Restore failed: " + restoreError); }
       throw error;
+    }
+  }
+
+  const snapshot = item => JSON.parse(JSON.stringify(item.toJSON()));
+  function fingerprint(value) {
+    const sort = input => Array.isArray(input) ? input.map(sort) : input && typeof input === "object" ?
+      Object.fromEntries(Object.keys(input).sort().map(key => [key, sort(input[key])])) : input;
+    // Sync may advance these values without changing any editable data.
+    const { version, dateModified, ...data } = value;
+    return JSON.stringify(sort(data));
+  }
+  function preview(item, candidate, arxivId, options) {
+    // Zotero's unsaved clone uses the real item-type field conversion rules.
+    // Apply the same mutation as the eventual write; never save this clone.
+    const clone = item.clone();
+    const before = clone.toJSON();
+    writeFields(clone, candidate, arxivId, options);
+    const after = clone.toJSON();
+    const ignored = new Set(["key", "version", "dateAdded", "dateModified"]);
+    return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+      .filter(field => !ignored.has(field) && JSON.stringify(before[field] || "") !== JSON.stringify(after[field] || ""))
+      .map(field => ({ field, before: before[field] || "", after: after[field] || "" }));
+  }
+  function createReview(items = selected()) {
+    const started = generation;
+    const itemMap = new Map(items.map(item => [item.id, item]));
+    const paced = PreprintBridgeReviewModel.pacedRequest(request, { wait: ms => Zotero.Promise.delay(ms) });
+    const ensure = (item, baseline) => {
+      if (started !== generation) throw Error(message("插件已停用，请重新核对。", "Plugin disabled. Review again."));
+      if (!item || !editable(item)) throw Error(message("条目已删除或不可编辑。", "The item was deleted or is read-only."));
+      if (busy.has(item.id)) throw Error(message("条目正在处理，请稍后重试。", "The item is busy. Retry later."));
+      if (baseline && fingerprint(snapshot(item)) !== fingerprint(baseline)) {
+        const error = Error(message("条目在核对后已被修改。你可以查看当前差异，再决定是否覆盖。", "The item changed after review. Review its current differences to choose whether to overwrite."));
+        error.code = "ITEM_CHANGED";
+        throw error;
+      }
+    };
+    const session = PreprintBridgeReviewModel.create({
+      async check(id, guard) {
+        const item = itemMap.get(id);
+        ensure(item);
+        const firstAuthor = item.getCreators()[0]?.lastName || "";
+        const problem = !paper(item) ? message("请选择文献主条目。", "Select a paper parent item.") :
+          !item.getDisplayTitle().trim() ? message("请先补全题名。", "Add the title first.") :
+          !firstAuthor.trim() ? message("请先补全第一作者。", "Add the first author first.") : "";
+        if (problem) { const error = Error(problem); error.skipped = true; throw error; }
+        const baseline = snapshot(item), arxivId = arxivOf(item);
+        busy.add(id);
+        try {
+          const result = await PreprintBridgeCore.resolvePublication({
+            title: item.getDisplayTitle(), firstAuthor, arxivId, doi: item.getField("DOI"),
+            url: item.getField("url"), published: published(item)
+          }, (url, options) => paced(url, options, () => {
+            guard();
+            if (started !== generation) throw Error("Plugin disabled");
+          }), { cache: discoveryCache });
+          guard();
+          if (fingerprint(snapshot(item)) !== fingerprint(baseline)) throw Error(message("检索期间条目已被修改，请重新核对。", "The item changed during lookup. Review again."));
+          result.candidates = result.candidates.map(withRating);
+          result.previews = result.candidates.map(candidate => preview(item, candidate, arxivId));
+          log(JSON.stringify(result.checks));
+          return { ...result, title: item.getDisplayTitle(), baseline, arxivId };
+        } finally { if (started === generation) busy.delete(id); }
+      },
+      rebase(id, result) {
+        const item = itemMap.get(id);
+        ensure(item);
+        return { ...result, baseline: snapshot(item), manualOverride: true,
+          previews: result.candidates.map(candidate => preview(item, candidate, result.arxivId, { allowTitleChange: true })) };
+      },
+      async apply(id, result, index) {
+        const item = itemMap.get(id);
+        ensure(item, result.baseline);
+        const before = snapshot(item);
+        busy.add(id);
+        try {
+          await apply(item, result.candidates[index], result.arxivId, { allowTitleChange: !!result.manualOverride });
+          return { before, after: snapshot(item) };
+        } finally { if (started === generation) busy.delete(id); }
+      },
+      async undo(id, saved, { overwrite = false } = {}) {
+        const item = itemMap.get(id);
+        ensure(item, overwrite ? null : saved.after);
+        const current = snapshot(item);
+        if (overwrite) {
+          const ignored = new Set(["key", "version", "dateAdded", "dateModified"]);
+          const changes = [...new Set([...Object.keys(current), ...Object.keys(saved.before)])]
+            .filter(field => !ignored.has(field) && JSON.stringify(current[field] || "") !== JSON.stringify(saved.before[field] || ""))
+            .map(field => {
+              let label = field;
+              try { label = Zotero.ItemFields.getLocalizedString(field); } catch (_) {}
+              const value = data => typeof data === "object" ? JSON.stringify(data) : String(data || "—");
+              return `${label}:\n${value(current[field])}\n→ ${value(saved.before[field])}`;
+            }).join("\n\n");
+          if (!Services.prompt.confirm(win(), title, message(
+            "撤销会覆盖后续的手动修改。以下是当前内容 → 恢复后的内容，是否继续？\n\n",
+            "Undo will overwrite later manual edits. Review current → restored values below. Continue?\n\n"
+          ) + changes)) return false;
+          ensure(item, current);
+        }
+        busy.add(id);
+        try {
+          item.fromJSON(saved.before, { strict: true });
+          await item.saveTx();
+        } catch (error) {
+          item.fromJSON(current, { strict: true });
+          throw error;
+        } finally { if (started === generation) busy.delete(id); }
+      }
+    });
+    session.add(items.map(item => ({ id: item.id, title: item.getDisplayTitle() })));
+    session.addItems = added => {
+      for (const item of added) itemMap.set(item.id, item);
+      session.add(added.map(item => ({ id: item.id, title: item.getDisplayTitle() })));
+    };
+    return session;
+  }
+  function openReview(items = selected()) {
+    if (reviewWindow && !reviewWindow.closed && reviewSession) {
+      reviewSession.addItems(items);
+      reviewWindow.focus();
+      void reviewSession.scan();
+      return;
+    }
+    const session = createReview(items);
+    reviewSession = session;
+    try {
+      reviewWindow = win().openDialog(rootURI + "content/review.xhtml", "_blank",
+        "chrome,centerscreen,resizable,dialog=no,width=1060,height=720", {
+          session, locale: Zotero.locale,
+          fieldLabel(field) { return Zotero.ItemFields.getLocalizedString(field); },
+          typeLabel(type) { return Zotero.ItemTypes.getLocalizedString(type); },
+          onClose() { session.close(); if (reviewSession === session) { reviewSession = null; reviewWindow = null; } }
+        });
+    } catch (error) {
+      session.close(); reviewSession = null;
+      alert(message("无法打开核对窗口：", "Could not open the review window: ") + error.message);
     }
   }
 
@@ -230,9 +380,9 @@ var PreprintBridge = (() => {
       if (started !== generation) return;
       await apply(item, candidate, id);
       if (started !== generation) return;
-      alert(candidate.publicationStatus === "accepted" ?
+      notify(candidate.publicationStatus === "accepted" ?
         message("已记录会议录用信息；正式出版信息尚待核对。", "Acceptance recorded; publisher metadata is still pending.") :
-        message("已更新原条目的出版信息；请核对作者与 PDF。", "Publication fields updated. Please review creators and the PDF."));
+        message("出版信息已更新。作者列表和 PDF 保持原样。", "Publication information updated. The author list and PDFs are unchanged."));
     } catch (error) {
       if (started !== generation) return;
       log("Update failed: " + (error?.stack || error));
@@ -257,7 +407,7 @@ var PreprintBridge = (() => {
     try {
       busy.add(preprint.id);
       await apply(preprint, candidate, arxivOf(preprint), { allowTitleChange: true });
-      if (started === generation) alert(message("信息已复制到原预印本条目，来源条目没有删除。", "Metadata copied to the original item; the source was not deleted."));
+      if (started === generation) notify(message("信息已复制到原预印本条目，来源条目没有删除。", "Metadata copied to the original item; the source was not deleted."));
     } catch (error) {
       log("Copy failed: " + (error?.stack || error));
       if (started === generation) alert(message("复制失败：", "Copy failed: ") + String(error?.message || error));
@@ -287,7 +437,7 @@ var PreprintBridge = (() => {
       `已更新 ${stats.updated} 项；无需修改 ${stats.unchanged} 项；无可靠匹配 ${stats.unmatched} 项；跳过 ${stats.skipped} 项；失败 ${stats.failed} 项。`,
       `Updated: ${stats.updated}; unchanged: ${stats.unchanged}; no reliable match: ${stats.unmatched}; skipped: ${stats.skipped}; failed: ${stats.failed}.`
     );
-    if (!changes.length) { alert(summary()); return stats; }
+    if (!changes.length) { notify(summary()); return stats; }
     const preview = changes.slice(0, 12).map(change => `${change.item.getDisplayTitle()}\n${change.label}`).join("\n\n");
     if (!Services.prompt.confirm(win(), title, message(
       `将更新 ${changes.length} 个条目在“其他”字段中的 CCF 2026 评级。无可靠匹配的条目保留原值。\n\n`,
@@ -308,7 +458,7 @@ var PreprintBridge = (() => {
         log("CCF update failed: " + (error?.stack || error));
       } finally { if (started === generation) busy.delete(item.id); }
     }
-    if (started === generation) alert(summary());
+    if (started === generation) (stats.failed ? alert : notify)(summary());
     return stats;
   }
 
@@ -320,14 +470,14 @@ var PreprintBridge = (() => {
 
   function showHelp() {
     alert(message(
-      "核对并更新出版信息：选中一个预印本、会议论文或期刊文章，核对后更新。\n\n更新 CCF 评级：选中一个或多个会议／期刊条目，按已有刊名或会议名本地匹配。\n\n复制正式版本信息到预印本：同时选中一个预印本和一个正式版本条目。\n\n打开 arXiv 原文：选中一个含 arXiv 标识的条目，更新后也可回到预印本页面。\n\n请选中文献主条目。灰色命令表示当前选择不满足条件，或条目不可编辑／正在处理。",
-      "Review and update publication: select one preprint, conference paper or journal article, then review before updating.\n\nUpdate CCF rating: select one or more conference/journal items to match their existing venue names locally.\n\nCopy published metadata to preprint: select one preprint and one published record together.\n\nOpen arXiv preprint: select one item containing an arXiv identifier, even after its publication fields have been updated.\n\nSelect bibliographic parent items. A disabled command means the selection is unsuitable, read-only or already being processed."
+      "核对并更新出版信息：选中一篇或多篇论文，集中查看差异，再勾选更新。支持停止、重试和窗口内撤销。\n\n更新 CCF 评级：选中一个或多个会议／期刊条目，按已有刊名或会议名本地匹配。\n\n高级 → 从已导入条目手动补全：仅在自动检索无匹配或正式版改名时使用，同时选中预印本与已导入的正式版。\n\n打开 arXiv 原文：选中一个含 arXiv 标识的条目，更新后也可回到预印本页面。\n\n请选中文献主条目。灰色命令表示当前选择不满足条件，或条目不可编辑／正在处理。",
+      "Review and update publication: select one or more papers, compare changes, then choose which to update. Stop, retry and undo within the review window.\n\nUpdate CCF rating: select one or more conference/journal items to match their existing venue names locally.\n\nAdvanced → Complete from an imported record: a fallback for unmatched or renamed papers. Select the preprint and an imported publication together.\n\nOpen arXiv preprint: select one item containing an arXiv identifier, even after its publication fields have been updated.\n\nSelect bibliographic parent items. A disabled command means the selection is unsuitable, read-only or already being processed."
     ));
   }
 
   function menuState(command, items = []) {
     const one = items.length === 1 ? items[0] : null;
-    if (command === "review") return !!one && paper(one) && editable(one) && !busy.has(one.id);
+    if (command === "review") return items.some(item => paper(item) && editable(item) && !busy.has(item.id));
     if (command === "ccf") return items.some(item => ccfEligible(item) && editable(item) && !busy.has(item.id));
     if (command === "copy") {
       const preprint = items.find(isPreprint);
@@ -371,10 +521,10 @@ var PreprintBridge = (() => {
       menus: [{ menuType: "submenu", l10nID: "preprint-bridge-menu",
         onShowing: (_event, context) => context.setVisible(!!context.items?.some(regular)),
         menus: [
-          action("review", items => checkItem(items[0])),
+          action("review", items => openReview(items)),
           action("ccf", items => updateCCF(items)),
-          action("copy", items => copySelected(items)),
           action("arxiv", items => openArxiv(items)),
+          { menuType: "submenu", l10nID: "preprint-bridge-advanced", menus: [action("copy", items => copySelected(items))] },
           { menuType: "separator" },
           action("help", () => showHelp())
         ]
@@ -383,10 +533,16 @@ var PreprintBridge = (() => {
   }
   function stop() {
     ++generation;
+    reviewSession?.close();
+    reviewSession = null;
+    if (reviewWindow && !reviewWindow.closed) reviewWindow.close();
+    reviewWindow = null;
     busy.clear();
     discoveryCache.clear();
     for (const progress of [...progressWindows]) closeProgress(progress);
     for (const id of menus.splice(0)) Zotero.MenuManager.unregisterMenu(id);
   }
-  return { start, stop, checkItem, apply, updateCCF, openArxiv, menuState };
+  return { start, stop, checkItem, apply, updateCCF, openArxiv, menuState, preview, createReview, openReview,
+    configure(options) { rootURI = options.rootURI; }
+  };
 })();
