@@ -8,7 +8,7 @@ Package verification compares every XPI entry to source, checks bootstrap callba
 
 **Limit:** these checks do not exercise the real Zotero desktop UI. Installation, menus, translations and restart behavior still need full Windows/macOS/Linux client validation. No user's Zotero library was modified by the tests.
 
-The new XHTML interaction suite runs in CI as a release gate. It renders the actual packaged UI with a fixture controller; this is distinct from testing the Zotero desktop application.
+**All five XHTML interaction scenarios passed in Chromium 151.0.7922.34, with zero page errors.** [Validation run](https://github.com/Kazuma-yj/perprint-bridge/actions/runs/36443503269) · [Browser report](tests/ui-results-1.2.0.json). The suite runs in CI as a release gate. It renders the actual packaged UI with a fixture controller; this is distinct from testing the Zotero desktop application.
 
 Menu tests cover a preprint, an accepted conference item, a PMLR record, another conference record, a journal, multiple selections and read-only records. The same main commands remain visible; manual transfer is consistently under Advanced. Batch CCF tests cover mixed selections, unchanged and ambiguous entries, failed saves, cancelled confirmation, concurrent edits and disabling. API contracts were checked against Zotero 10.0.3's official MenuManager and URL-launching source.
 
@@ -16,7 +16,9 @@ Menu tests cover a preprint, an accepted conference item, a PMLR record, another
 
 ## 1.2.0 新增测试
 
-新增 11 项模型与 Zotero 适配器回归测试：
+新增 11 项模型与 Zotero 适配器回归测试全部通过；5 组真实 XHTML 界面交互场景全部通过，页面报错为 0。
+
+覆盖范围：
 
 - 修改预览与实际写入一致，包括条目类型转换导致的字段移除；不保存预览副本。
 - 批量只更新勾选项；保存失败恢复内存数据并继续后续条目。
@@ -24,7 +26,7 @@ Menu tests cover a preprint, an accepted conference item, a PMLR record, another
 - 后续手改默认不被覆盖；重新预览允许主动覆盖，包括手改题名。
 - 撤销覆盖显示当前差异，确认或取消均按预期处理。
 - 重新预览后又手改时再次保护；撤销保存失败保留撤销记录。
-- 顺序队列、去重、停止与继续，取消后的迟到结果不写入。
+- 顺序队列、去重、停止与继续，取消后的迟到结果不写入；保存中停止会完成当前事务并保留撤销，后续条目不写入。
 - 仅录用结果不被“勾选全部正式记录”选中；候选切换清除勾选。
 - 关闭、禁用、再次打开核对窗口的生命周期。
 - 按来源间隔请求；DBLP 两个接口共享 429 冷却；等待中可停止。
@@ -92,7 +94,7 @@ node scripts/live-smoke.cjs 2403.06634 10.1038/nature14539
 ## 尚需实际客户端验证
 
 运行环境没有 Windows Zotero 10.0.3，不能声称已验证该界面的安装、右键菜单、翻译和重启行为。
-客户端验证应在正常模式下安装/启用 1.2.0，覆盖固定子菜单、灰色命令、取消核对、单篇更新、批量 CCF、重复启停、重启与检查更新。
+客户端验证应在正常模式下安装/启用 1.2.0，覆盖固定子菜单、灰色命令、停止与继续、单篇/多篇出版更新、手改后主动覆盖、窗口内撤销、批量 CCF、重复启停、重启与检查更新。
 
 0.1.4 和 0.1.5 的 XPI 均包含 `shutdown`。Zotero 10.0.3 的加载器在找不到插件作用域/回调时也会输出同一句
 `missing bootstrap method`。日志同时存在 `safeMode => true`，因此未将这条警告归因于函数缺失，也未声称警告已完全消除。

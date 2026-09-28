@@ -1,0 +1,17 @@
+{
+  "passed": 5,
+  "checks": [
+    "actual XHTML renders safely, formal-only selection excludes acceptance notes",
+    "selected update, inline success, undo, no success alert",
+    "manual overwrite requires new preview and selection; undo override can be cancelled or confirmed",
+    "stop and resume retain results; acceptance-only provenance is explicit",
+    "Chinese and English text, narrow viewport, dark appearance"
+  ],
+  "pageErrors": [],
+  "browser": "151.0.7922.34",
+  "version": "1.2.0",
+  "checkedAt": "2026-09-28",
+  "environment": "GitHub Actions Ubuntu, Chromium, fixture controller; not Zotero desktop",
+  "validatedCommit": "90c3194005ae047ec54f8bcff6ad1e5eebce8b77",
+  "workflowRun": "https://github.com/Kazuma-yj/perprint-bridge/actions/runs/36443503269"
+}
