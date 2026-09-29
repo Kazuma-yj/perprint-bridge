@@ -57,7 +57,7 @@ jobs:
             update.json
   release:
     needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Kazuma-yj/perprint-bridge'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Kazuma-yj/preprint-bridge'
     runs-on: ubuntu-latest
     permissions:
       contents: write

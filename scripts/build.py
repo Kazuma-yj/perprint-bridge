@@ -26,7 +26,7 @@ with ZipFile(OUT, "w") as archive:
         info.compress_type = ZIP_DEFLATED
         info.external_attr = 0o644 << 16
         archive.writestr(info, file.read_bytes())
-repo = "https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main"
+repo = "https://raw.githubusercontent.com/Kazuma-yj/preprint-bridge/main"
 update = {"addons": {ZOTERO["id"]: {"updates": [{
     "version": MANIFEST["version"],
     "update_link": f"{repo}/dist/{OUT.name}",

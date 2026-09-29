@@ -2,7 +2,7 @@
 
 **核对论文发表信息与 CCF 评级，保留你在 Zotero 中的附件与批注。**
 
-[English](README.md) · [下载安装](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [反馈问题](https://github.com/Kazuma-yj/perprint-bridge/issues) · [版本说明](releases/1.3.0.md)
+[English](README.md) · [下载安装](https://github.com/Kazuma-yj/preprint-bridge/releases/latest) · [反馈问题](https://github.com/Kazuma-yj/preprint-bridge/issues) · [版本说明](releases/1.3.1.md)
 
 Preprint Bridge 是一个面向 **Zotero 10.0.x** 的插件。它帮助你查找预印本对应的正式会议论文或期刊文章，也支持核对已有发表条目的信息。在你确认后更新原条目，同时保留条目 ID、附件、批注、笔记、标签与所属分类。
 
@@ -19,7 +19,7 @@ Preprint Bridge 是一个面向 **Zotero 10.0.x** 的插件。它帮助你查找
 
 ## 安装
 
-1. 前往 [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest)，下载 **`preprint-bridge-1.3.0.xpi`**。请选择 `.xpi` 安装包，不是 Source code 压缩包。
+1. 前往 [Releases](https://github.com/Kazuma-yj/preprint-bridge/releases/latest)，下载 **`preprint-bridge-1.3.1.xpi`**。请选择 `.xpi` 安装包，不是 Source code 压缩包。
 2. 打开 Zotero 的 **工具 → 插件**，点击齿轮菜单，选择“从文件安装插件”，打开下载的 XPI。
 3. 正常重启 Zotero，确认 Preprint Bridge 已启用。
 
@@ -130,7 +130,7 @@ CCF 匹配在本地完成。部分公开目录数据会临时缓存在内存中�
 | 没有 CCF 评级 | 可能未列入目录、不在内置数据子集中，或缩写存在歧义；请核对官方目录。 |
 | 自动更新失败 | 检查 GitHub 访问情况，必要时从 Releases 手动安装新版 XPI。 |
 
-遇到可复现的问题，请[提交 Issue](https://github.com/Kazuma-yj/perprint-bridge/issues/new/choose)，提供 arXiv 标识、Zotero 与插件版本、预期结果和相关日志。公开日志前请删除私人信息。
+遇到可复现的问题，请[提交 Issue](https://github.com/Kazuma-yj/preprint-bridge/issues/new/choose)，提供 arXiv 标识、Zotero 与插件版本、预期结果和相关日志。公开日志前请删除私人信息。
 
 ## 开发与许可
 

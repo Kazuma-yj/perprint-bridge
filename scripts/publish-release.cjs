@@ -15,7 +15,7 @@ function loadPlan() {
   return {
     version, tag: `v${version}`, name: `Preprint Bridge ${version}`,
     body: fs.readFileSync(path.join(root, 'releases', `${version}.md`), 'utf8'),
-    repository: process.env.GITHUB_REPOSITORY || 'Kazuma-yj/perprint-bridge',
+    repository: process.env.GITHUB_REPOSITORY || 'Kazuma-yj/preprint-bridge',
     sha: process.env.GITHUB_SHA,
     assets: [
       { name, bytes, type: 'application/x-xpinstall' },
@@ -53,7 +53,7 @@ async function verifyAsset(asset, expected, api) {
 }
 
 async function publish(plan, api) {
-  if (plan.repository !== 'Kazuma-yj/perprint-bridge' || !/^[a-f0-9]{40}$/.test(plan.sha || '')) {
+  if (plan.repository !== 'Kazuma-yj/preprint-bridge' || !/^[a-f0-9]{40}$/.test(plan.sha || '')) {
     throw Error('Publishing requires the canonical repository and an exact commit SHA');
   }
   const base = `/repos/${plan.repository}`;

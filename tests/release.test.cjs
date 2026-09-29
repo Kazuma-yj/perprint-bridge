@@ -2,12 +2,12 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { publish, hash } = require('../scripts/publish-release.cjs');
 const bytes = Buffer.from('example package');
-const plan = { repository: 'Kazuma-yj/perprint-bridge', sha: 'a'.repeat(40), tag: 'v1.0.0',
+const plan = { repository: 'Kazuma-yj/preprint-bridge', sha: 'a'.repeat(40), tag: 'v1.0.0',
   name: 'Preprint Bridge 1.0.0', body: 'Release notes',
   assets: [{ name: 'preprint-bridge-1.0.0.xpi', bytes, type: 'application/x-xpinstall', digest: `sha256:${hash(bytes)}` }] };
 const asset = { name: plan.assets[0].name, size: bytes.length, digest: plan.assets[0].digest, state: 'uploaded' };
 const release = { id: 1, draft: false, prerelease: false, target_commitish: plan.sha,
-  html_url: 'https://github.com/Kazuma-yj/perprint-bridge/releases/tag/v1.0.0', assets: [asset] };
+  html_url: 'https://github.com/Kazuma-yj/preprint-bridge/releases/tag/v1.0.0', assets: [asset] };
 
 test('release reruns verify existing assets without changing a published release', async () => {
   const calls = [];

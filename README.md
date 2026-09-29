@@ -2,7 +2,7 @@
 
 **Find published versions, update publication information and check CCF ratings while keeping your Zotero annotations.**
 
-[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/perprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/perprint-bridge/issues) · [Release notes](releases/1.3.0.md)
+[简体中文](README.zh-CN.md) · [Download](https://github.com/Kazuma-yj/preprint-bridge/releases/latest) · [Report a problem](https://github.com/Kazuma-yj/preprint-bridge/issues) · [Release notes](releases/1.3.1.md)
 
 Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the conference or journal version of a preprint and refresh existing publication records. Review the metadata, then update your existing item after confirmation. Your item identity, attachments, annotations, notes, tags, and collection membership stay in place.
 
@@ -19,7 +19,7 @@ Preprint Bridge is a plugin for **Zotero 10.0.x**. It helps you find the confere
 
 ## Install
 
-1. Download **`preprint-bridge-1.3.0.xpi`** from [Releases](https://github.com/Kazuma-yj/perprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
+1. Download **`preprint-bridge-1.3.1.xpi`** from [Releases](https://github.com/Kazuma-yj/preprint-bridge/releases/latest). Choose the `.xpi` asset, not GitHub's source-code archive.
 2. In Zotero, open **Tools → Plugins**, then choose **Install Plugin From File…** from the gear menu and select the XPI.
 3. Restart Zotero normally and enable Preprint Bridge if needed.
 
@@ -130,7 +130,7 @@ CCF matching runs locally. Some public directory data is cached temporarily in m
 | No CCF grade | The venue may be unlisted, missing from the bundled subset, or ambiguous. Check the official directory. |
 | Update fails | Check GitHub connectivity; install the latest release XPI manually if necessary. |
 
-For a reproducible problem, [open an issue](https://github.com/Kazuma-yj/perprint-bridge/issues/new/choose) with the arXiv ID, Zotero/plugin versions, expected result and relevant log lines. Remove private information before posting.
+For a reproducible problem, [open an issue](https://github.com/Kazuma-yj/preprint-bridge/issues/new/choose) with the arXiv ID, Zotero/plugin versions, expected result and relevant log lines. Remove private information before posting.
 
 ## Development and license
 

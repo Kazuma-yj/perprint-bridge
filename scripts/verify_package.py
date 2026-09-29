@@ -26,8 +26,8 @@ update = json.loads((ROOT / "update.json").read_text())["addons"][addon["id"]]["
 digest = "sha256:" + hashlib.sha256(package.read_bytes()).hexdigest()
 assert update["version"] == version
 assert update["update_hash"] == digest
-assert update["update_link"] == f"https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/dist/{package.name}"
-assert addon["update_url"] == "https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/update.json"
+assert update["update_link"] == f"https://raw.githubusercontent.com/Kazuma-yj/preprint-bridge/main/dist/{package.name}"
+assert addon["update_url"] == "https://raw.githubusercontent.com/Kazuma-yj/preprint-bridge/main/update.json"
 for key in ["strict_min_version", "strict_max_version"]:
     assert update["applications"]["zotero"][key] == addon[key]
 print(f"Verified {package.name}: {digest}")

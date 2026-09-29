@@ -12,7 +12,7 @@ test('Zotero manifest includes the required update URL and matches package versi
   assert.equal(zotero.id, 'preprint-bridge@research.local');
   assert.match(zotero.update_url, /^https:\/\/[^/]+\/.+\.json$/);
   assert.equal(zotero.update_url,
-    'https://raw.githubusercontent.com/Kazuma-yj/perprint-bridge/main/update.json');
+    'https://raw.githubusercontent.com/Kazuma-yj/preprint-bridge/main/update.json');
   assert.equal(zotero.strict_min_version, '10.0');
   assert.equal(zotero.strict_max_version, '10.0.*');
 });
